@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './LiveSession.css';
-import { getAuthHeader } from '../../utils/auth'
+import { getAuthHeaders } from '../../utils/auth'
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 
@@ -43,7 +43,7 @@ export default function LiveSessionsPage() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": getAuthHeader()
+          "Authorization": getAuthHeaders()
         }
       });
 
