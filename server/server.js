@@ -21,24 +21,35 @@ const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
 
 app.use(express.json());
 app.use(cors());
-
 // ----------------------- Firebase Admin Init -----------------------
+let serviceAccount;
+
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+  // Case 1: JSON string in .env
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (err) {
+    console.error("❌ Invalid FIREBASE_SERVICE_ACCOUNT JSON:", err);
+  }
 } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+  // Case 2: Path to JSON file in .env
   const serviceAccountPath = path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-  const serviceAccount = require(serviceAccountPath);
+  serviceAccount = require(serviceAccountPath);
+} else {
+  // Case 3: Default local file
+  try {
+    serviceAccount = require("./firebase-service-account.json");
+  } catch (err) {
+    console.warn("⚠️ No Firebase service account found. Skipping Firebase init.");
+  }
+}
+
+if (serviceAccount) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-} else {
-  console.warn(
-    "⚠️ Firebase service account not found in env. Set FIREBASE_SERVICE_ACCOUNT (json string) or FIREBASE_SERVICE_ACCOUNT_PATH."
-  );
 }
+
 
 // ----------------------- MongoDB -----------------------
 let db;
