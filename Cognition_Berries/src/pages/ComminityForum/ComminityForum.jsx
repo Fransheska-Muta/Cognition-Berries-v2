@@ -3,7 +3,7 @@ import Footer from '../../components/Footer/Footer'
 import { Link } from 'react-router-dom'
 import './ComminityForum.css'
 
-function ComminityForum() {
+function CommunityForum() {
   return (
     <>
       <Navbar />
@@ -80,4 +80,4 @@ function ComminityForum() {
   )
 }
 
-export default ComminityForum
+export default CommunityForum
