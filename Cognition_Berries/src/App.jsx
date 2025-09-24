@@ -15,10 +15,10 @@ import { CartProvider } from "./Context/CartContext"
 import OrdersSummary from "./pages/Orders-summary/Orders-summary"
 import LiveSession from "./pages/LiveSession/LiveSession"
 import SettingsPage from "./pages/SettingsPage/Settings"
+import { isAuthenticated } from "./utils/auth"
 
 const ProtectedRoute = ({ children }) => {
-  const auth = JSON.parse(localStorage.getItem('auth'))
-  return auth ? children : <Navigate to='/login' />;
+  return isAuthenticated() ? children : <Navigate to='/login' />;
 }
 
 function App() {
