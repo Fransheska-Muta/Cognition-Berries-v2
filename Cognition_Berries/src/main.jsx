@@ -17,14 +17,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase once, here
-initializeApp(firebaseConfig);
-const analytics = getAnalytics(initializeApp);
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 createRoot(document.getElementById('root')).render(
-  <AppContextProvider>
 
-    <StrictMode>
+  <StrictMode>
+    <AppContextProvider>
       <App />
-    </StrictMode>,
-  </AppContextProvider>
+    </AppContextProvider>
+  </StrictMode>,
 )

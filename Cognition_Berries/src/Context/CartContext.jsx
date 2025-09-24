@@ -14,7 +14,7 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const [cartCount, setCartCount] = useState(0);
   const [cartItems, setCartItems] = useState([]);
-  const Base_API = import.meta.env.BASE_API
+  const Base_API = import.meta.env.VITE_BASE_API
 
   // Function to fetch cart count from server
   const fetchCartCount = async () => {
