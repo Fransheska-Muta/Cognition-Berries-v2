@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Router, Routes, Navigate } from "react-router-dom"
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom"
 import SignUp from './pages/AuthPages/SignUp'
 import Login from './pages/AuthPages/Login'
 import HomePage from './pages/HomePage/HomePage'
@@ -7,7 +7,7 @@ import UserDashboard from "./pages/Dashboard/User Dashboard/UserDashboard"
 import LandingPage from "./pages/LandingPage/LandingPage"
 import AboutUs from "./pages/AboutUs/AboutUs"
 import Courses from "./pages/Courses/Courses"
-import ComminityForum from "./pages/ComminityForum/ComminityForum"
+import CommunityForum from "./pages/CommunityForum/CommunityForum"
 import CartPage from "./pages/Cart/CartPage"
 import ExtraMaterial from "./pages/ExtraMaterial/ExtraMaterial"
 import CheckoutPage from "./pages/CheckoutPage/CheckoutPage"
@@ -16,96 +16,35 @@ import OrdersSummary from "./pages/Orders-summary/Orders-summary"
 import LiveSession from "./pages/LiveSession/LiveSession"
 import SettingsPage from "./pages/SettingsPage/Settings"
 
-
-const ProtectedRoutr = ({ children }) => {
-  const auth = localStorage.getItem('auth')
+const ProtectedRoute = ({ children }) => {
+  const auth = JSON.parse(localStorage.getItem('auth'))
   return auth ? children : <Navigate to='/login' />;
 }
 
-
 function App() {
-
   return (
     <CartProvider>
-    <BrowserRouter>
-      <Routes>
-        <Route path='/' element={<LandingPage />} />
-        <Route path='/signup' element={<SignUp />} />
-        <Route path='/login' element={<Login />} />
-        <Route path='/about' element={<AboutUs />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoutr>
-              <HomePage />
-            </ProtectedRoutr>
-          }
-        />
-        <Route path='/courses' element={
-          <ProtectedRoutr>
-            <Courses />
-          </ProtectedRoutr>
-        } />
-        <Route
-          path='/dashboard'
-          element={
-            <ProtectedRoutr>
-              <UserDashboard />
-            </ProtectedRoutr>
-          }
-        />
-        <Route
-          path='/CommunityForum'
-          element={
-            <ProtectedRoutr>
-              <ComminityForum />
-            </ProtectedRoutr>
-          }
-        />
-        <Route path="/extra-material"
-          element={
-            <ProtectedRoutr>
-              <ExtraMaterial />
-            </ProtectedRoutr>
-          } />
-        <Route path="/cart"
-          element={
-            <ProtectedRoutr>
-              <CartPage />
-            </ProtectedRoutr>
-          } />
-        <Route path="/checkout"
-          element={
-            <ProtectedRoutr>
-              <CheckoutPage />
-            </ProtectedRoutr>
-          } />
-          <Route 
-          path='order-success'
-          element={
-          <ProtectedRoutr>
-            <OrdersSummary/>
-          </ProtectedRoutr>
-          }
-          />
-          <Route
-          path='liveSession'
-          element={
-            <ProtectedRoutr>
-              <LiveSession/>
-            </ProtectedRoutr>
-          } />
-          <Route
-          path='settings'
-          element={
-            <ProtectedRoutr>
-              <SettingsPage />
-            </ProtectedRoutr>
-          }
-          />
-        <Route path='/*' element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+      <BrowserRouter>
+        <Routes>
+          <Route path='/' element={<LandingPage />} />
+          <Route path='/signup' element={<SignUp />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/about' element={<AboutUs />} />
+
+          <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+          <Route path='/dashboard' element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+          <Route path='/community-forum' element={<ProtectedRoute><CommunityForum /></ProtectedRoute>} />
+          <Route path='/extra-material' element={<ProtectedRoute><ExtraMaterial /></ProtectedRoute>} />
+          <Route path='/cart' element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+          <Route path='/checkout' element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+          <Route path='/order-success' element={<ProtectedRoute><OrdersSummary /></ProtectedRoute>} />
+          <Route path='/live-session' element={<ProtectedRoute><LiveSession /></ProtectedRoute>} />
+          <Route path='/settings' element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+
+          <Route path='/*' element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </CartProvider>
   )
 }
