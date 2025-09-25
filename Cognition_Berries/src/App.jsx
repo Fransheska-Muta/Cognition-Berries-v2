@@ -15,6 +15,8 @@ import { CartProvider } from "./Context/CartContext"
 import OrdersSummary from "./pages/Orders-summary/Orders-summary"
 import LiveSession from "./pages/LiveSession/LiveSession"
 import SettingsPage from "./pages/SettingsPage/Settings"
+import CourseDetail from './pages/CourseDetail/CourseDetail';
+import CourseLearning from './pages/CourseLearning/CourseLearning';
 import { isAuthenticated } from "./utils/auth"
 
 const ProtectedRoute = ({ children }) => {
@@ -35,6 +37,8 @@ function App() {
           <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
           <Route path='/dashboard' element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
           <Route path='/community-forum' element={<ProtectedRoute><CommunityForum /></ProtectedRoute>} />
+          <Route path="/course/:courseId" element={<CourseDetail />} />
+          <Route path="/course/:courseId/learn" element={<CourseLearning />} />
           <Route path='/extra-material' element={<ProtectedRoute><ExtraMaterial /></ProtectedRoute>} />
           <Route path='/cart' element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
           <Route path='/checkout' element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />

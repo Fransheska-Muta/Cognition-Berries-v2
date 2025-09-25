@@ -52,9 +52,71 @@
     /* border: 1px solid #aaa; */
 }
 
-.sec2{
-    border:1px solid white;
-    height:60vh;
+
+.courses-section {
+    padding: 2rem 1rem;
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin: 0 auto;
+    max-width: 1200px;
+}
+
+.course-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: box-shadow 0.2s;
+}
+.course-card:hover {
+    box-shadow: 0 6px 24px rgba(16,185,129,0.10);
+}
+.course-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.course-desc {
+    color: #555;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+.course-btn {
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1.2rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+.course-btn:hover {
+    background: #15803d;
+}
+
+@media (max-width: 900px) {
+    .courses-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .courses-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .course-card {
+        padding: 1rem;
+    }
 }
 
 .reasons{

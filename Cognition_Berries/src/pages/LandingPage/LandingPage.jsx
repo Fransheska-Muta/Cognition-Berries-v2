@@ -104,7 +104,7 @@ function LandingPage() {
             <Link to='/signup' element={<SignupPage />} >Start </Link>
           </button>
           <button>
-            <Link to='/liveSession' element={<LiveSession />} >Join {`>`} </Link>
+            <Link to='/live-session' element={<LiveSession />} >Join {`>`} </Link>
           </button>
         </div>
       </section>
