@@ -1,111 +1,345 @@
-import { useState, useEffect, useRef } from "react";
-import "./FeedbackCarousel.css";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { ChevronLeft, ChevronRight, Star, CheckCircle2 } from "lucide-react";
+import { publicApiRequest } from "../../config/api";
+import './FeedbackCarousel.css'
+
 
 function FeedbackCarousel() {
   const [reviews, setReviews] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); 
+  const [isAnimating, setIsAnimating] = useState(false);
   const intervalRef = useRef(null);
 
-  // Fetch reviews from backend with Basic Auth
+
+
   useEffect(() => {
-    const Base_API = import.meta.env.VITE_BASE_API
     const fetchReviews = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (!user) {
-          console.error("No user in localStorage");
-          return;
+        setLoading(true);
+        const response = await publicApiRequest("/reviews", { method: "GET" });
+        if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+        const data = await response.json();
+        
+        // Debug: log the data structure
+        console.log("Reviews data:", data);
+        
+        // Flatten nested reviews structure
+        let allReviews = [];
+        if (Array.isArray(data)) {
+          data.forEach(course => {
+            if (course.reviews && Array.isArray(course.reviews)) {
+              // Add course name to each review
+              const courseReviews = course.reviews.map(review => ({
+                ...review,
+                courseName: course.courseName || 'Unknown Course'
+              }));
+              allReviews = [...allReviews, ...courseReviews];
+            }
+          });
         }
-
-        // Build Basic Auth header
-        const authHeader = "Basic " + btoa(`${user.email}:${user.password}`);
-
-        const res = await fetch(`http://${Base_API}:3000/reviews`, {
-          headers: {
-            Authorization: authHeader,
-          },
+        
+        console.log("Flattened reviews:", allReviews);
+        
+        // Filter out reviews with no content
+        const validReviews = allReviews.filter(review => {
+          const hasContent = (review.review || review.comment || review.title);
+          const hasName = (review.studentName || review.name);
+          return hasContent && hasName;
         });
-
-        if (!res.ok) {
-          console.error("Failed to fetch reviews:", res.status);
-          return;
-        }
-
-        const data = await res.json();
-        setReviews(data);
+        
+        setReviews(validReviews);
+        setError(null);
       } catch (err) {
         console.error("Error fetching reviews:", err);
+        setError(err.message || "Failed to load reviews");
+        setReviews([]);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchReviews();
   }, []);
 
-  // Automatic carousel effect
+  // Autoplay functionality
   useEffect(() => {
-    if (reviews.length === 0) return;
-    intervalRef.current = setInterval(() => {
-      setCurrentIndex((prev) =>
-        prev + 3 >= reviews.length ? 0 : prev + 1
-      );
-    }, 5000); 
+    const startAuto = () => {
+      stopAuto();
+      if (reviews.length > 1) {
+        intervalRef.current = setInterval(() => {
+          handleNext();
+        }, 6000);
+      }
+    };
 
-    return () => clearInterval(intervalRef.current);
-  }, [reviews]);
+    const stopAuto = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
 
-  const prevReview = () => {
-    setCurrentIndex((prev) =>
-      prev === 0 ? Math.max(reviews.length - 3, 0) : prev - 1
+    startAuto();
+    return () => stopAuto();
+  }, [reviews, currentIndex]);
+
+  const handlePrev = () => {
+    if (isAnimating || reviews.length <= 1) return;
+    setIsAnimating(true);
+    setCurrentIndex((prev) => (prev === 0 ? reviews.length - 1 : prev - 1));
+    setTimeout(() => setIsAnimating(false), 600);
+  };
+
+  const handleNext = () => {
+    if (isAnimating || reviews.length <= 1) return;
+    setIsAnimating(true);
+    setCurrentIndex((prev) => (prev + 1) % reviews.length);
+    setTimeout(() => setIsAnimating(false), 600);
+  };
+
+  const stopAutoplay = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const startAutoplay = () => {
+    if (!intervalRef.current && reviews.length > 1) {
+      intervalRef.current = setInterval(() => handleNext(), 6000);
+    }
+  };
+
+  const renderStars = (rating) => (
+    <div className="flex gap-1">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`w-5 h-5 ${
+            i < rating
+              ? "fill-amber-400 text-amber-400"
+              : "fill-gray-200 text-gray-200"
+          }`}
+        />
+      ))}
+    </div>
+  );
+
+  // Get 3 visible cards for carousel effect
+  const getVisibleCards = () => {
+    if (reviews.length === 0) return [];
+    if (reviews.length === 1) return [{ review: reviews[0], position: 0 }];
+    if (reviews.length === 2) {
+      return [
+        { review: reviews[(currentIndex + reviews.length - 1) % reviews.length], position: -1 },
+        { review: reviews[currentIndex], position: 0 }
+      ];
+    }
+    
+    const cards = [];
+    for (let i = -1; i <= 1; i++) {
+      let idx = currentIndex + i;
+      if (idx < 0) idx = reviews.length + idx;
+      if (idx >= reviews.length) idx = idx - reviews.length;
+      cards.push({ review: reviews[idx], position: i });
+    }
+    return cards;
+  };
+
+  const visibleCards = getVisibleCards();
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="feedback-container">
+        <div className="max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              What Our Students Say
+            </h2>
+            <p className="text-lg text-gray-600">Loading reviews...</p>
+          </div>
+          <div className="flex items-center justify-center carousel-height">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-16 h-16 border-4 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+              <p className="text-gray-600">Loading student feedback...</p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
-  };
+  }
 
-  const nextReview = () => {
-    setCurrentIndex((prev) =>
-      prev + 3 >= reviews.length ? 0 : prev + 1
+  // Error state
+  if (error) {
+    return (
+      <div className="feedback-container">
+        <div className="max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              What Our Students Say
+            </h2>
+          </div>
+          <div className="flex items-center justify-center carousel-height">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md text-center">
+              <div className="text-red-600 text-5xl mb-4">⚠</div>
+              <h3 className="text-xl font-semibold text-red-900 mb-2">Unable to Load Reviews</h3>
+              <p className="text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
-  };
+  }
 
-  // Generate star rating
-  const renderStars = (rating) => {
-    return [...Array(5)].map((_, i) => (
-      <span key={i} className={i < rating ? "star filled" : "star"}>
-        ★
-      </span>
-    ));
-  };
-
-  // Guard against empty reviews OR failed fetch
-  if (!reviews || reviews.length === 0) return <p>No reviews available.</p>;
-
-  // Get 3 reviews to display, wrap around if needed
-  const visibleReviews = [];
-  for (let i = 0; i < 3; i++) {
-    const idx = (currentIndex + i) % reviews.length;
-    visibleReviews.push(reviews[idx]);
+  // Empty state
+  if (reviews.length === 0) {
+    return (
+      <div className="feedback-container">
+        <div className="max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              What Our Students Say
+            </h2>
+          </div>
+          <div className="flex items-center justify-center carousel-height">
+            <div className="bg-white rounded-2xl p-8 max-w-md text-center">
+              <div className="text-gray-400 text-5xl mb-4">💬</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
+              <p className="text-gray-600">Be the first to share your experience!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="feedback-container">
-      <h2>User Feedback</h2>
+    <section
+      className="feedback-container"
+      aria-label="User feedback carousel"
+      onMouseEnter={stopAutoplay}
+      onMouseLeave={startAutoplay}
+    >
+      <div className="max-w-7xl">
+        {/* Header Section */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-3">
+            What Our Students Say
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Discover why thousands of learners trust us with their education journey
+          </p>
+        </div>
 
-      <div className="review-list">
-        {visibleReviews.map((review, idx) => (
-          <div className="review-card" key={idx}>
-            <div className="stars">{renderStars(review.rating)}</div>
-            <p className="comment">"{review.comment}"</p>
-            <div className="reviewer">
-              <strong>{review.name}</strong>
-              <p>{review.role}</p>
-            </div>
+        {/* Carousel Container */}
+        <div className="relative carousel-height mb-12">
+          {/* Cards */}
+          <div className="cards-stage">
+            {visibleCards.map(({ review, position }) => {
+              const isCenter = position === 0;
+              const isLeft = position === -1;
+
+              return (
+                <div
+                  key={`${review._id || review.id || review.studentName}-${position}`}
+                  className="absolute transition-all card-wrapper"
+                  style={{
+                    transform: `translateX(${position * 400}px) scale(${isCenter ? 1 : 0.85})`,
+                    opacity: isCenter ? 1 : 0.4,
+                    zIndex: isCenter ? 30 : isLeft ? 20 : 10,
+                    pointerEvents: isCenter ? 'auto' : 'none'
+                  }}
+                >
+                  <div className="bg-white rounded-2xl p-8 shadow-2xl card-width card-height flex flex-col">
+                    {/* Rating */}
+                    <div className="mb-4">{renderStars(review.rating)}</div>
+
+                    {/* Title */}
+                    {review.title && (
+                      <h3 className="title">
+                        {review.title}
+                      </h3>
+                    )}
+
+                    {/* Review Text */}
+                    <p className="comment">
+                      "{review.review || review.comment || 'No review text available'}"
+                    </p>
+
+                    {/* Reviewer Info */}
+                    <div className="reviewer">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="reviewer-name">
+                              {review.studentName || review.name}
+                            </p>
+                            {review.verified && (
+                              <span className="verified-badge">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          {review.courseName && (
+                            <p className="reviewer-role">{review.courseName}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
 
-      <div className="nav-buttons">
-        <button onClick={prevReview}>&lt;</button>
-        <button onClick={nextReview}>&gt;</button>
+          {/* Navigation Buttons - Only show if more than 1 review */}
+          {reviews.length > 1 && (
+            <>
+              <button
+                onClick={handlePrev}
+                disabled={isAnimating}
+                className="nav-btn nav-prev"
+                aria-label="Previous review"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={handleNext}
+                disabled={isAnimating}
+                className="nav-btn nav-next"
+                aria-label="Next review"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Dots Indicator - Only show if more than 1 review */}
+        {reviews.length > 1 && (
+          <div className="dots-wrap">
+            {reviews.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (!isAnimating && idx !== currentIndex) {
+                    setIsAnimating(true);
+                    setCurrentIndex(idx);
+                    setTimeout(() => setIsAnimating(false), 600);
+                  }
+                }}
+                className={`dot ${currentIndex === idx ? 'active' : ''}`}
+                aria-label={`Go to review ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
 

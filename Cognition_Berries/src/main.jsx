@@ -1,10 +1,13 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import AppContextProvider from './Context/AppContext.jsx'
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { initializeApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './Context/AuthContext.jsx';
+import './index.css';
+import App from './App.jsx';
+import AppContextProvider from './Context/AppContext.jsx';
+import Providers from './Providers.jsx'
 
 // ✅ load config from environment
 const firebaseConfig = {
@@ -21,10 +24,16 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
 createRoot(document.getElementById('root')).render(
-
   <StrictMode>
-    <AppContextProvider>
-      <App />
-    </AppContextProvider>
-  </StrictMode>,
-)
+    {/* ✅ Wrap everything in BrowserRouter */}
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContextProvider>
+          <Providers>
+            <App />
+          </Providers>
+        </AppContextProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>
+);

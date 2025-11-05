@@ -49,13 +49,14 @@ h1, h2, h3 {
 
 .part2-1 div{
   border-radius: 20px;
-  /* border:1px solid black; */
-  height:100%;
+  border:1px solid black;
+  height:99%;
   width:30%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* justify-content: center; */
+  justify-content: center;
+  /* box-shadow: 1.5px 1px 5px 1px; */
 }
 
 .crs-img{
@@ -70,6 +71,14 @@ h1, h2, h3 {
   /* border:1px solid red; */
   width:80%;
   margin: 20px 0px 35px;
+}
+
+.part2-1 div a{
+  text-decoration: none;
+  color:lime;
+  background-color: black;
+  padding:12px 20px;
+
 }
 
 p {
@@ -110,8 +119,82 @@ p {
 .course-display > div:last-child {
   display: flex;
   gap: 30px;
+  padding: 0 10px;
+  align-items: flex-start; /* ensure sidebar and grid align at top */
+}
+
+/* Courses Grid: center and constrain width */
+.course-display > div:last-child > div {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto; /* center the grid within the available space */
+  align-items: start;
+}
+
+/* Card: make consistent heights and vertically align content */
+.course {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px 0 rgba(16,185,129,0.08);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between; /* push meta/price to bottom */
+  transition: box-shadow 0.2s, transform 0.2s;
+  position: relative;
+  min-height: 340px; /* consistent card height */
+}
+
+/* Ensure overlay/content inside card uses full height */
+.course .course-overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.course .course-overlay p {
+  flex: 1; /* allow description to take remaining space */
+}
+
+/* Sidebar Filters */
+aside {
+  flex: 0 0 250px;
+  border-right: 1px solid #eee;
+  padding-right: 20px;
+}
+
+#search-input {
+  width: 90%;
+  padding: 10px 12px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+aside h2 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+aside hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 15px 0;
   /* border:1px solid red; */
-  padding: 0 20px;
+}
+
+aside select {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
 }
 
 /* Sidebar Filters */
@@ -152,6 +235,11 @@ aside select {
 }
 
 /* Courses Grid */
+
+.course-display{
+  border:1px solid red;
+}
+
 .course-display > div:last-child > div {
   flex: 1;
   display: grid;
@@ -207,12 +295,27 @@ aside select {
 }
 
 .tilted-card-overlay {
+  padding: 18px 16px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 8px 32px 0 rgba(16,185,129,0.13);
+  /* border: 2px solid #16a34a; */
+  min-height: 180px;
   position: absolute;
-  top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 2;
-  will-change: transform;
-  transform: translateZ(30px);
+  transition: background 0.2s, box-shadow 0.2s;
+  /* Add a subtle backdrop blur for extra pop */
+  backdrop-filter: blur(2px);
+}
+
+.tilted-card-inner:hover .tilted-card-overlay,
+.tilted-card-inner:focus .tilted-card-overlay {
+  background: rgba(255,255,255,0.99);
+  box-shadow: 0 12px 40px 0 rgba(16,185,129,0.18);
+  border-color: #15803d;
 }
 
 .tilted-card-caption {
@@ -233,6 +336,7 @@ aside select {
   position: relative;
   perspective: 1000px;
   margin: 0;
+  /* border:1px solid red; */
 }
 
 /* Card inner container */
@@ -244,6 +348,7 @@ aside select {
   background: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
+  border:1px solid red;
 }
 
 /* Image */
@@ -255,9 +360,27 @@ aside select {
 
 /* Overlay */
 .tilted-card-overlay {
-  padding: 14px;
-  background: #fff;
-  text-align: left;
+  padding: 18px 16px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 8px 32px 0 rgba(16,185,129,0.13);
+  border: 2px solid #16a34a;
+  min-height: 180px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  transition: background 0.2s, box-shadow 0.2s;
+  /* Add a subtle backdrop blur for extra pop */
+  backdrop-filter: blur(2px);
+}
+
+.tilted-card-inner:hover .tilted-card-overlay,
+.tilted-card-inner:focus .tilted-card-overlay {
+  background: rgba(255,255,255,0.99);
+  box-shadow: 0 12px 40px 0 rgba(16,185,129,0.18);
+  border-color: #15803d;
 }
 
 .course-overlay h3 {

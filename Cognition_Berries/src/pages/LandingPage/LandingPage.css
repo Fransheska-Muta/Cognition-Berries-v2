@@ -10,6 +10,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-evenly;
+    margin-top:70px
 }
 
 .box1 h1, p{
@@ -51,7 +52,7 @@
 
 .banner2{
     width:100%;
-    height:90vh;
+    height:90vh;    
     /* bordeR:1px solid red; */
     display: flex;
     align-items: center;
@@ -80,6 +81,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-evenly;
+    padding: 10px;
 }
 
 .pageTitle{
@@ -117,8 +119,8 @@
 
 .features-btns{
     /* border:1px solid red; */
-    width:15%;
-    height:7%;
+    width:25%;
+    height:10%;
     display: flex;
     align-items: center;
     justify-content: space-evenly;
@@ -126,7 +128,18 @@
 
 .features-btns a{
     text-decoration: none;
-    color: black;
+    /* color: white; */
+    /* border:1px solid red; */
+    padding: 15px 30px;
+    background: black;
+}
+
+.features-btns a:nth-child(1){
+    color:lime
+}
+
+.features-btns a:nth-child(2){
+    color:blue
 }
 
 .features-btns button{
@@ -147,4 +160,10 @@
     width:100vw;
     height:50vh;
     /* border:1px solid red; */
+}
+
+.user-feedback{
+    /* border:1px solid red; */
+    height:130vh;
+    padding:0px
 }

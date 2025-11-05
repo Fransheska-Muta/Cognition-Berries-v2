@@ -47,7 +47,7 @@ export default function CartPage() {
         return;
       }
 
-      const response = await fetch(`http://${BaseAPI}:3000/cart`, {
+      const response = await fetch(`${BaseAPI}/cart`, {
         headers
       });
 
@@ -115,7 +115,7 @@ export default function CartPage() {
       const currentQty = parseInt(item.quantity) || 1;
       const newQuantity = Math.max(1, currentQty + delta);
 
-      const response = await fetch(`http://${BaseAPI}:3000/cart/${id}`, {
+      const response = await fetch(`${BaseAPI}/cart/${id}`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ quantity: newQuantity }),
@@ -163,7 +163,7 @@ export default function CartPage() {
         return;
       }
 
-      const response = await fetch(`http://${BaseAPI}:3000/cart/${id}`, {
+      const response = await fetch(`${BaseAPI}/cart/${id}`, {
         method: "DELETE",
         headers,
       });
@@ -206,7 +206,7 @@ export default function CartPage() {
       }
 
       // Use the bulk delete endpoint
-      const response = await fetch(`http://${BaseAPI}:3000/cart`, {
+      const response = await fetch(`${BaseAPI}/cart`, {
         method: "DELETE",
         headers,
       });

@@ -11,7 +11,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   // Use cart context
-  const { cartCount, clearCart, fetchCartCount } = useCart();
+  const { cartCount, clearCart } = useCart();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -20,13 +20,6 @@ const Navbar = () => {
       setUser(userData);
     }
   }, []); // run once on mount
-
-  // Fetch cart count only when user is set
-  useEffect(() => {
-    if (user) {
-      fetchCartCount();
-    }
-  }, [user, fetchCartCount]);
 
   const handleLogout = () => {
     localStorage.removeItem('auth');
@@ -50,7 +43,7 @@ const Navbar = () => {
         </div>
 
         <ul className="nav-links">
-          <li><Link to="/">Home</Link></li>
+          <li><Link to="/home">Home</Link></li>
           <li><Link to="/courses">Courses</Link></li>
           <li><Link to="/blog">Blog</Link></li>
           <li><Link to="/about">About</Link></li>
@@ -102,9 +95,9 @@ const Navbar = () => {
         <ul className="sidebar-links">
           <li><Link to="/dashboard" onClick={toggleSidebar}>⚡ Dashboard</Link></li>
           <li><Link to="/settings" onClick={toggleSidebar}>⚙️ Settings</Link></li>
-          <li><Link to="/CommunityForum" onClick={toggleSidebar}>💬 Community Forum</Link></li>
+          <li><Link to="/community-forum" onClick={toggleSidebar}>💬 Community Forum</Link></li>
           <li><Link to="/extra-material" onClick={toggleSidebar}>💬 Extra Material</Link></li>
-          <li><Link to="/liveSession" onClick={toggleSidebar}>💬 Live Sessions</Link></li>
+          <li><Link to="/live-session" onClick={toggleSidebar}>💬 Live Sessions</Link></li>
         </ul>
 
         <div className="sidebar-footer">

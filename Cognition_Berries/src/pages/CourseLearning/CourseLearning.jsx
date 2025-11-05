@@ -83,7 +83,7 @@ function CourseLearning() {
       // Fetch user progress
       const headers = getAuthHeaders();
       if (headers) {
-        const BaseAPI = import.meta.env.VITE_BASE_API;
+        const BaseAPI = 'localhost' || import.meta.env.VITE_BASE_API;
         try {
           const response = await fetch(`http://${BaseAPI}:3000/user/progress/${courseId}`, {
             headers
@@ -109,7 +109,7 @@ function CourseLearning() {
     if (!headers) return;
 
     try {
-      const BaseAPI = import.meta.env.VITE_BASE_API;
+      const BaseAPI = 'localhost' || import.meta.env.VITE_BASE_API;
       await fetch(`http://${BaseAPI}:3000/user/progress`, {
         method: "POST",
         headers,

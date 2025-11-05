@@ -1,70 +1,54 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
+import { API_CONFIG, getAuthHeaders, handleAuthError } from "../../config/api";
 import "./ExtraMaterial.css";
 
 function ExtraMaterial() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const BaseAPI = import.meta.env.VITE_BASE_API;
+  const [error, setError] = useState(""); // ✅ Add this
+  const navigate = useNavigate();
 
-  // Helper function to get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      console.error("No auth token found");
-      return null;
+  const fetchBooks = async () => {
+    try {
+      setLoading(true);
+      const headers = await getAuthHeaders();
+      // ✅ FIX: use /material-books instead of /material-courses
+      const response = await fetch(`${API_CONFIG.BASE_URL}/material-books`, {
+        headers,
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch materials");
+      const data = await response.json();
+      setBooks(data); // ✅ FIX: use setBooks instead of setMaterials
+    } catch (err) {
+      console.error("Error fetching materials:", err);
+      setError("Failed to load materials."); // ✅ FIX: now defined
+      handleAuthError(err);
+    } finally {
+      setLoading(false);
     }
-    return {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    };
   };
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      setLoading(true);
-      try {
-        // Note: material-books endpoint is public in the updated server, no auth needed
-        const res = await fetch(`http://${BaseAPI}:3000/material-books`);
-
-        if (!res.ok) {
-          console.error("Failed to fetch books:", res.status);
-          setBooks([]);
-          return;
-        }
-
-        const data = await res.json();
-        setBooks(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching books:", error);
-        setBooks([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchBooks();
   }, []);
 
   const addToCart = async (book) => {
     try {
-      const headers = getAuthHeaders();
+      // await the auth headers
+      const headers = await getAuthHeaders().catch(() => null);
       if (!headers) {
         alert("Please log in to add items to cart");
+        navigate("/login");
         return;
       }
 
-      // First, get current cart items to check for duplicates
-      const cartResponse = await fetch(`http://${BaseAPI}:3000/cart`, {
-        headers
-      });
-
+      // Get current cart items to check for duplicates
+      const cartResponse = await fetch(`${API_CONFIG.BASE_URL}/cart`, { headers });
       if (cartResponse.status === 401) {
-        alert("Your session has expired. Please log in again.");
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
+        handleAuthError(navigate);
         return;
       }
 
@@ -74,11 +58,13 @@ function ExtraMaterial() {
       }
 
       // Check if item already exists in cart
-      const existingItem = currentCart.find(item => item.title === book.title);
+      const existingItem = currentCart.find(item =>
+        item.productId === (book._id || book.book_id) || item.title === book.title
+      );
 
       if (existingItem) {
         // Update quantity of existing item
-        const updateResponse = await fetch(`http://${BaseAPI}:3000/cart/${existingItem._id}`, {
+        const updateResponse = await fetch(`${API_CONFIG.BASE_URL}/cart/${existingItem._id}`, {
           method: "PUT",
           headers,
           body: JSON.stringify({
@@ -87,10 +73,7 @@ function ExtraMaterial() {
         });
 
         if (updateResponse.status === 401) {
-          alert("Your session has expired. Please log in again.");
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
+          handleAuthError(navigate);
           return;
         }
 
@@ -101,24 +84,21 @@ function ExtraMaterial() {
         alert(`${book.title} quantity updated in cart!`);
       } else {
         // Add new item to cart
-        const addResponse = await fetch(`http://${BaseAPI}:3000/cart`, {
+        const addResponse = await fetch(`${API_CONFIG.BASE_URL}/cart`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             title: book.title,
-            price: book.price,
-            author: book.author,
-            description: book.description,
+            price: book.price || 0,
+            author: book.author || "Unknown",
+            description: book.description || "",
             quantity: 1,
             productId: book._id || book.book_id
           }),
         });
 
         if (addResponse.status === 401) {
-          alert("Your session has expired. Please log in again.");
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
+          handleAuthError(navigate);
           return;
         }
 
@@ -149,7 +129,9 @@ function ExtraMaterial() {
           <div className="books-grid">
             {books.map((book) => (
               <div key={book._id || book.book_id} className="book-card">
-                <img src='./Books.png' alt={book.title} />
+                <Link to={`/extra-material/${book._id || book.book_id}`}>
+                  <img src='./Books.png' alt={book.title} style={{ cursor: "pointer" }} />
+                </Link>
                 <h3>{book.title}</h3>
                 <p>{book.description}</p>
                 <p className="author">By: {book.author}</p>

@@ -1,53 +1,78 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { apiRequest } from "../../config/api";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import "./CourseDetail.css";
 
-function CourseDetail() {
+const CourseDetail = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [userProgress, setUserProgress] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [enrolling, setEnrolling] = useState(false);
 
-  // Helper function to get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) return null;
-    return {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    };
-  };
+  // Memoize computed values
+  const { 
+    formattedDuration,
+    completionRate,
+    difficultyColor
+  } = useMemo(() => ({
+    formattedDuration: course?.duration ? `${Math.floor(course.duration / 60)}h ${course.duration % 60}m` : "N/A",
+    completionRate: course?.completionRate || 0,
+    difficultyColor: {
+      Beginner: "bg-green-100 text-green-800",
+      Intermediate: "bg-yellow-100 text-yellow-800",
+      Advanced: "bg-red-100 text-red-800"
+    }[course?.level || "Beginner"]
+  }), [course]);
 
   useEffect(() => {
     fetchCourseDetails();
     checkEnrollmentStatus();
   }, [courseId]);
 
-  const fetchCourseDetails = async () => {
-    try {
-      const BaseAPI = import.meta.env.VITE_BASE_API;
-      const response = await fetch(`http://${BaseAPI}:3000/courses/${courseId}`);
-      
-      if (response.ok) {
-        const courseData = await response.json();
+  // Load course data and enrollment status
+  useEffect(() => {
+    const loadCourseData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch course details and enrollment status in parallel
+        const [courseResponse, enrollmentResponse] = await Promise.all([
+          apiRequest(`/courses/${courseId}`),
+          apiRequest('/user/enrollments')
+        ]);
+
+        const courseData = await courseResponse.json();
+        const enrollmentsData = await enrollmentResponse.json();
+
         setCourse(courseData);
-      } else {
-        console.error("Failed to fetch course details");
+        
+        // Check if user is enrolled
+        const enrollment = enrollmentsData.find(e => e.courseId === courseId);
+        if (enrollment) {
+          setIsEnrolled(true);
+          setUserProgress(enrollment.progress);
+        }
+      } catch (err) {
+        console.error("Error loading course data:", err);
+        setError(err.message || "Failed to load course details");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching course details:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadCourseData();
+  }, [courseId]);
 
   const checkEnrollmentStatus = async () => {
-    const headers = getAuthHeaders();
+    const headers = await getAuthHeaders();
     if (!headers) return;
 
     try {
@@ -70,32 +95,21 @@ function CourseDetail() {
   };
 
   const handleEnroll = async () => {
-    const headers = getAuthHeaders();
-    if (!headers) {
-      alert("Please login to enroll in courses");
-      navigate("/login");
-      return;
-    }
-
     try {
-      const BaseAPI = import.meta.env.VITE_BASE_API;
-      const response = await fetch(`http://${BaseAPI}:3000/user/enroll`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ courseId })
+      setEnrolling(true);
+      const response = await apiRequest(`/enroll/${courseId}`, {
+        method: "POST"
       });
 
-      if (response.ok) {
-        setIsEnrolled(true);
-        setUserProgress({ completedLessons: [], progressPercentage: 0 });
-        alert("Successfully enrolled in course!");
-      } else {
-        const error = await response.json();
-        alert(`Failed to enroll: ${error.message}`);
-      }
-    } catch (error) {
-      console.error("Error enrolling in course:", error);
-      alert("Failed to enroll in course");
+      if (!response.ok) throw new Error("Enrollment failed");
+
+      setIsEnrolled(true);
+      // Show success notification instead of alert
+      // You might want to use a toast notification library here
+    } catch (err) {
+      setError("Failed to enroll in the course. Please try again.");
+    } finally {
+      setEnrolling(false);
     }
   };
 

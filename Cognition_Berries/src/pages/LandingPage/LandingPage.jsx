@@ -38,12 +38,8 @@ function LandingPage() {
           community are here to guide you every step of the way.
         </p>
         <div className="box-1-buttons">
-          <button>
-            <Link to='/courses' element={<Courses />} > Start Learning </Link>
-          </button>
-          {/* <button>
-            <Link to='/signup' element={<SignupPage />} > Join </Link>
-          </button> */}
+          <Link to="/courses" className="cta-btn">Start Learning</Link>
+          <Link to='/signup' element={<SignupPage />} > Join </Link>
         </div>
       </div>
 
@@ -82,7 +78,7 @@ function LandingPage() {
             <p>Unlock your potential with tailored courses designed for all levels.</p>
           </div>
           <div className="card">
-            <img src="/Learnin2.jpg" alt="" />
+            <img src="/Cozy-Workspace-Setup.png" alt="" />
             <h3>
               Join Live Coaching for
               <br />
@@ -90,7 +86,7 @@ function LandingPage() {
             <p>Participate in live sessions to enhance your skills.</p>
           </div>
           <div className="card">
-            <img src="/Learnin2.jpg" alt="" />
+            <img src="/Learning.jpg" alt="" />
             <h3>
               Engage with Our Vibrant
               <br />
@@ -100,39 +96,35 @@ function LandingPage() {
         </div>
 
         <div className="features-btns">
-          <button>
-            <Link to='/signup' element={<SignupPage />} >Start </Link>
-          </button>
-          <button>
-            <Link to='/live-session' element={<LiveSession />} >Join {`>`} </Link>
-          </button>
+          <Link to='/signup' element={<SignupPage />} >Start </Link>
+          <Link to='/live-session' element={<LiveSession />} >Join </Link>
         </div>
       </section>
 
       {/* Ending of features section */}
 
-       {/* Begginig of User Feedback Section  */}
+      {/* Begginig of User Feedback Section  */}
 
-        <section className="user-feedback">
-          {!user ? (
-            <div></div>
-          ) : (
-            <FeedbackCarousel />
-          )}
-        </section>
+      <section className="user-feedback">
+        {!user ? (
+          <div></div>
+        ) : (
+          <FeedbackCarousel />
+        )}
+      </section>
 
 
       {/* Beging of Banner 3 */}
 
       <section className="banner3">
-        
+
       </section>
 
       {/* Ennding of Banner 3 */}
 
       {/* Beggining of Footer */}
 
-        <Footer/>
+      <Footer />
 
       {/* Ending of Footer */}
     </>

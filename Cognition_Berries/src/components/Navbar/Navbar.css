@@ -1,5 +1,7 @@
 /* Navbar Layout */
 .navbar {
+  /* position: absolute;
+  z-index: 50; */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -12,9 +14,9 @@
   z-index: 1;
   width:97vw;
   overflow-y: hidden;
-  height:30px
-  /* margin-bottom: 20px; */
-
+  height:35px;
+  margin-bottom: 20px;
+  /* margin-top: -20px; */
 }
 
 .nav-links {
@@ -48,7 +50,15 @@
 
 .auth-buttons{
   /* border:1px solid red; */
-  margin:0px
+  margin:10px 0px;
+  /* border:1px solid red; */
+  padding:20px
+}
+
+.login-btn, .signup-btn{
+  height:55%;
+  display: flex;
+  align-items: center;
 }
 
 .auth-buttons a{

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import Navbar from "../../components/Navbar/Navbar";
 import { Link } from "react-router-dom";
+import { apiRequest, publicApiRequest } from "../../config/api";
+import { useAuth } from "../../Context/AuthContext";
+import Navbar from "../../components/Navbar/Navbar";
 import TiltedCard from "../../components/TiltedCard/TiltedCard";
-import "./Course.css";
 import Footer from "../../components/Footer/Footer";
+import "./Course.css";
 
-function CoursesPage() {
+function Courses() {
+  const { currentUser, loading: authLoading } = useAuth ? useAuth() : { currentUser: null, loading: false };
   const [courses, setCourses] = useState([]);
   const [filters, setFilters] = useState("All");
   const [loading, setLoading] = useState(false);
@@ -14,83 +17,62 @@ function CoursesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedLevel, setSelectedLevel] = useState("All Levels");
+  const [error, setError] = useState("");
 
-  // Helper function to get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      console.error("No auth token found");
-      return null;
-    }
-    return {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    };
-  };
+	useEffect(() => {
+	  const fetchCourses = async () => {
+	    setLoading(true);
+	    try {
+	      console.log("📚 Fetching courses...");
+	      let response;
 
-  useEffect(() => {
-    const BaseAPI = import.meta.env.VITE_BASE_API;
-    
-    const fetchCourses = async () => {
-      setLoading(true);
-      try {
-        // Note: Courses endpoint is public in the updated server, no auth needed
-        const res = await fetch(`http://${BaseAPI}:3000/courses`);
+	      // If we have an authenticated user, try the authenticated endpoint first.
+	      if (currentUser) {
+	        try {
+	          response = await apiRequest("/courses", { method: "GET" });
+	        } catch (err) {
+	          console.warn("🔁 Authenticated fetch failed, falling back to public:", err.message || err);
+	          // fallback to public endpoint (publicApiRequest will retry with auth if available)
+	          response = await publicApiRequest("/courses", { method: "GET" });
+	        }
+	      } else {
+	        // no user — use public endpoint
+	        response = await publicApiRequest("/courses", { method: "GET" });
+	      }
 
-        if (!res.ok) {
-          console.error("Failed to fetch courses:", res.status);
-          setCourses([]);
-          return;
-        }
+	      const data = await response.json();
+	      console.log("✅ Courses fetched:", Array.isArray(data) ? data.length : 0);
+	      setCourses(Array.isArray(data) ? data : []);
+	      setError("");
+	    } catch (err) {
+	      console.error("❌ Error fetching courses:", err);
+	      setError("Failed to fetch courses: " + (err.message || "unknown"));
+	      setCourses([]);
+	    } finally {
+	      setLoading(false);
+	    }
+	  };
 
-        const data = await res.json();
-        setCourses(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-        setCourses([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+	  fetchCourses();
+	}, [currentUser]); // run on mount and when auth state changes
 
-    fetchCourses();
-  }, []);
 
   // Filter logic
-  const filteredCourses = courses
-    .filter((course) => {
-      // Search filter
-      if (
-        searchTerm &&
-        !course.title.toLowerCase().includes(searchTerm.toLowerCase())
-      ) {
-        return false;
-      }
-
-      // Category filter
-      if (
-        selectedCategory !== "All Categories" &&
-        course.category !== selectedCategory
-      ) {
-        return false;
-      }
-
-      // Level filter
-      if (
-        selectedLevel !== "All Levels" &&
-        course.level !== selectedLevel
-      ) {
-        return false;
-      }
-
-      // Price filter
-      if (selectedPrice === "free") return course.price === 0;
-      if (selectedPrice === "paid") return course.price > 0;
-      if (selectedPrice === "subscription")
-        return course.priceType === "subscription";
-
-      return true;
-    });
+  const filteredCourses = courses.filter((course) => {
+    if (searchTerm && !course.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    if (selectedCategory !== "All Categories" && course.category !== selectedCategory) {
+      return false;
+    }
+    if (selectedLevel !== "All Levels" && course.level !== selectedLevel) {
+      return false;
+    }
+    if (selectedPrice === "free") return course.price === 0;
+    if (selectedPrice === "paid") return course.price > 0;
+    if (selectedPrice === "subscription") return course.priceType === "subscription";
+    return true;
+  });
 
   // Sorting logic
   const sortedCourses = [...filteredCourses].sort((a, b) => {
@@ -108,6 +90,10 @@ function CoursesPage() {
     }
     return 0;
   });
+
+  if (authLoading) {
+    return <div>Loading authentication...</div>;
+  }
 
   return (
     <>
@@ -129,25 +115,19 @@ function CoursesPage() {
             <img src="/Learning.jpg" alt="" className="crs-img" />
             <h3>Choose Your Learning Path: Beginner or Intermediate Courses Available</h3>
             <p>Our courses are designed to empower you with essential financial skills.</p>
-            <Link>
-              <button>Enroll {" >"}</button>
-            </Link>
+            <Link to="/courses-enroll" className="enroll-btn">Enroll</Link>
           </div>
           <div>
             <img src="/Learning.jpg" alt="" className="crs-img" />
             <h3>Engaging Content and Interactive Learning Experience Await You</h3>
             <p>Dive into our engaging modules that make learning fun and effective.</p>
-            <Link>
-              <button>Enroll {" >"}</button>
-            </Link>
+            <Link to="/courses-enroll">Enroll</Link>
           </div>
           <div>
             <img src="/Learning.jpg" alt="" className="crs-img" />
             <h3>Track Your Progress and Achieve Your Financial Goals with Us</h3>
             <p>Stay motivated as you monitor your learning journey and accomplishments.</p>
-            <Link>
-              <button>Enroll {" >"}</button>
-            </Link>
+            <Link to="/courses-enroll">Enroll </Link>
           </div>
         </div>
       </div>
@@ -257,10 +237,12 @@ function CoursesPage() {
           <div style={{ flex: 1 }}>
             {loading ? (
               <p>Loading courses...</p>
+            ) : error ? (
+              <p>{error}</p>
             ) : sortedCourses.length > 0 ? (
               sortedCourses.map((course, i) => (
                 <TiltedCard
-                  key={i}
+                  key={course._id || i}
                   imageSrc={course.image || "https://via.placeholder.com/400x250"}
                   altText={course.title}
                   captionText={course.title}
@@ -275,17 +257,16 @@ function CoursesPage() {
                   displayOverlayContent={true}
                   overlayContent={
                     <div className="course-overlay">
+                      <Link to={`/course/${course._id}`} className="course-link">View course</Link>
                       <div className="course-level">{course.level || "Beginner"}</div>
                       <h3>{course.title}</h3>
                       <p>{course.description}</p>
-
                       <div className="course-meta">
                         <span>⭐ {course.rating || "4.5"} ({course.reviews || 120})</span>
                         <span>📚 {course.lessons || 20} lessons</span>
                         <span>👨‍🎓 {course.students || 1000} students</span>
                       </div>
-
-                      <p className="price">${course.price}</p>
+                      <p className="price">R{course.price}</p>
                     </div>
                   }
                 />
@@ -301,4 +282,4 @@ function CoursesPage() {
   );
 }
 
-export default CoursesPage;
+export default Courses;

@@ -9,13 +9,14 @@ import {
 } from "react-icons/fa6";
 import "./Footer.css";
 
+
 function Footer() {
   return (
     <footer className="footer">
       <div className="footer-container">
         {/* Left Section */}
         <div className="footer-left">
-          <h2 className="footer-logo">Logo</h2>
+          <h2 className="footer-logo"><img src="/public" alt="" /></h2>
 
           <div className="footer-contact">
             <p><strong>Address:</strong></p>
