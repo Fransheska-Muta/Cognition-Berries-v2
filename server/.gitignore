@@ -1,5 +1,34 @@
+<<<<<<< HEAD
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.env
+*cypress
+=======
 .env
 node_modules
 Sanje-key.pem
 gnition-berries-firebase-adminsdk-fbsvc-74466cd3b4.json
 firebase-service-account.json
+>>>>>>> 681a4c8c1999a846bc06eb2980501a4bca050f01

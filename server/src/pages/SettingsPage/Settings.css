@@ -1,0 +1,211 @@
+/* Root wrapper — contains all settings page elements */
+.settings-root {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  color: #1f2937;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+
+.dark .settings-root {
+  background-color: #111827;
+  color: #e5e7eb;
+}
+
+/* Container */
+.settings-root .settings-container {
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Header Section */
+.settings-root .settings-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.settings-root .settings-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.dark .settings-root .settings-title {
+  color: #e5e7eb;
+}
+
+.settings-root .settings-subtitle {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.dark .settings-root .settings-subtitle {
+  color: #9ca3af;
+}
+
+/* Profile Card */
+.settings-root .settings-profile-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s, border-color 0.3s, transform 0.2s ease;
+}
+
+.dark .settings-root .settings-profile-card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.settings-root .settings-profile-card:hover {
+  transform: translateY(-3px);
+}
+
+/* Avatar */
+.settings-root .settings-profile-avatar {
+  flex-shrink: 0;
+  margin-right: 1.5rem;
+}
+
+.settings-root .settings-profile-avatar img {
+  width: 100px;
+  height: 100px;
+  border-radius: 9999px;
+  object-fit: cover;
+  border: 3px solid #3b82f6;
+  background: #fff;
+}
+
+/* Profile Info */
+.settings-root .settings-profile-info {
+  flex: 1;
+}
+
+.settings-root .settings-profile-name {
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dark .settings-root .settings-profile-name {
+  color: #e5e7eb;
+}
+
+.settings-root .settings-profile-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 0.5rem;
+  color: #3b82f6;
+}
+
+.settings-root .settings-profile-email {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.dark .settings-root .settings-profile-email {
+  color: #9ca3af;
+}
+
+/* Meta Info */
+.settings-root .settings-profile-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.settings-root .settings-profile-role,
+.settings-root .settings-profile-joined {
+  background-color: #f9fafb;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .settings-root .settings-profile-role,
+.dark .settings-root .settings-profile-joined {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border-color: #374151;
+}
+
+/* Spinner */
+.settings-root .animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error box */
+.settings-root .error-box {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  color: #991b1b;
+}
+
+.dark .settings-root .error-box {
+  background-color: #7f1d1d;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+/* Buttons */
+.settings-root button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.settings-root button:hover {
+  transform: translateY(-1px);
+}
+
+.settings-root .settings-save-btn {
+  background-color: #3b82f6;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  margin-top: 1rem;
+}
+
+.settings-root .settings-save-btn:hover {
+  background-color: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .settings-root .settings-profile-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .settings-root .settings-profile-avatar {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+
+  .settings-root .settings-profile-meta {
+    justify-content: center;
+  }
+}

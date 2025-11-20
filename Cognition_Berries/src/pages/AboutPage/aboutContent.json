@@ -1,0 +1,200 @@
+{
+  "hero": {
+    "headline": "Small lessons. Big freedom.",
+    "subheadline": "We teach money the way you teach a bike — step by step, kindly, and with real practice. Start with our free lesson.",
+    "ctaPrimaryText": "Start Free Lesson",
+    "ctaPrimaryUrl": "/courses",
+    "ctaSecondaryText": "Read Our Story",
+    "ctaSecondaryUrl": "#our-story"
+  },
+  "story": {
+    "short": "From a kitchen table to a global community. Cognition Berries began with one simple belief: everyone deserves a fair chance to understand money.",
+    "full": "Cognition Berries started in 2020 when Amara noticed something troubling: young people in her community had dreams but no map. They wanted to invest, build businesses, and save for the future—but no one had ever taught them how.\n\nSo Amara did what any determined teacher does. She sat down at her kitchen table with a cup of tea, a whiteboard, and a question: 'What if I made money fun and simple?'\n\nHer first 'students' were her younger sister, two cousins, and a neighbour's son. They met in the lounge, worked through real examples (like what a stock really is), and celebrated small wins together. Within weeks, two of them had opened their first investment accounts.\n\nWord spread. Soon, the meetings moved to a church hall. Then online when the world changed in 2020. Today, Cognition Berries reaches learners in 15 countries—from Lagos to London, from Nairobi to New York.\n\nWe still teach the same way: with kindness, no shame, real examples, and the belief that building wealth is a skill anyone can learn.",
+    "timeline": [
+      {
+        "year": "2020",
+        "event": "Kitchen Table Beginnings",
+        "detail": "Amara teaches 4 friends about money over tea. The dream starts small but real."
+      },
+      {
+        "year": "2021",
+        "event": "Church Hall Scale",
+        "detail": "30 learners meet weekly. First course goes online. 50+ signups in month one."
+      },
+      {
+        "year": "2023",
+        "event": "Global Growth",
+        "detail": "10,000+ learners. 20 courses. 5 languages. Partners in 12 countries. Still human-first, always."
+      }
+    ],
+    "founderName": "Amara Okonkwo, Founder",
+    "founderQuote": "Financial literacy is not a luxury—it's the foundation of freedom. We're here to make sure no one gets left behind."
+  },
+  "mission": {
+    "title": "Our Mission",
+    "text": "To make financial education simple, kind, and practical so people can build wealth one small habit at a time."
+  },
+  "vision": {
+    "title": "Our Vision",
+    "text": "A world where financial knowledge empowers individuals to achieve their dreams, regardless of where they start."
+  },
+  "values": [
+    {
+      "title": "Kindness",
+      "text": "We teach without shame. Money talk can feel scary. We make it safe.",
+      "icon": "❤️"
+    },
+    {
+      "title": "Practicality",
+      "text": "Real steps. Real examples. Real results. No jargon. No BS.",
+      "icon": "🎯"
+    },
+    {
+      "title": "Accessibility",
+      "text": "For everyone. Every language. Every income level. Free starter course, always.",
+      "icon": "🌍"
+    }
+  ],
+  "methodology": [
+    {
+      "title": "Bite-Sized Lessons",
+      "text": "10–15 minutes. Real life. No overwhelm. Learn at your speed."
+    },
+    {
+      "title": "Coaching Support",
+      "text": "Stuck? Ask. Our coaches reply within 24 hours. Real humans. Real answers."
+    },
+    {
+      "title": "Interactive Quizzes",
+      "text": "Test what you learned. Celebrate wins. No pressure, just progress."
+    },
+    {
+      "title": "Action Plans",
+      "text": "Every lesson ends with: 'What will you do this week?' Real change starts small."
+    },
+    {
+      "title": "Community",
+      "text": "Learn together. Share wins. Ask questions. You're never alone on this journey."
+    }
+  ],
+  "impact": {
+    "learners": 12500,
+    "learnerLabel": "Learners worldwide",
+    "coursesCompleted": 45000,
+    "coursesLabel": "Courses completed",
+    "avgSavingsPercent": 35,
+    "savingsLabel": "Avg. savings increase (12 months)",
+    "partners": ["Global Finance Institute", "Youth Action Foundation", "Women in Finance"],
+    "partnerLabel": "Partner organizations"
+  },
+  "testimonials": [
+    {
+      "name": "Zainab M., Lagos",
+      "quote": "I went from 'I don't understand stocks' to buying my first share. Amara made it feel simple, not scary.",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+      "alt": "Zainab, a learner from Lagos, smiling at the camera"
+    },
+    {
+      "name": "James K., Nairobi",
+      "quote": "As a parent, I learned more here than in 20 years of 'trying to figure it out.' Now I teach my kids too.",
+      "photoUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+      "alt": "James, a parent from Nairobi"
+    },
+    {
+      "name": "Temi A., Remote",
+      "quote": "The community is real. People celebrate your wins. I didn't expect that kindness in a finance course.",
+      "photoUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+      "alt": "Temi, a remote learner from the community"
+    }
+  ],
+  "caseStudy": {
+    "name": "Blessing's Journey",
+    "story": "Blessing, 22, was job-hunting. A friend mentioned Cognition Berries. Six weeks into our starter course, Blessing understood compound interest, built an emergency fund, and started a side hustle.",
+    "outcome": "Today: 3-month emergency fund, first stock purchase, and a 40% boost in income from a new skill learned via our courses."
+  },
+  "team": [
+    {
+      "name": "Amara Okonkwo",
+      "role": "Founder & Lead Educator",
+      "bio": "Former teacher turned fintech rebel. Believes everyone deserves a fair shot. Drinks too much tea.",
+      "photoUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+      "linkedin": "https://linkedin.com/in/amara-okonkwo"
+    },
+    {
+      "name": "David Chen",
+      "role": "Finance Expert & Coach Lead",
+      "bio": "15 years in investment banking. Left to teach. Now: making finance human again, one learner at a time.",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+      "linkedin": "https://linkedin.com/in/david-chen"
+    },
+    {
+      "name": "Nneka Adeyemi",
+      "role": "Community Lead & Partnerships",
+      "bio": "Connector. Optimist. Believes in the power of community. Hosts live Q&As and cheers on every learner.",
+      "photoUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+      "linkedin": "https://linkedin.com/in/nneka-adeyemi"
+    },
+    {
+      "name": "Marcus Williams",
+      "role": "Product & Tech",
+      "bio": "Code + creativity + kindness. Built the platform so learners can thrive. Indie game dev by night.",
+      "photoUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+      "linkedin": "https://linkedin.com/in/marcus-williams"
+    }
+  ],
+  "faqs": [
+    {
+      "q": "Who is Cognition Berries for?",
+      "a": "Anyone who wants to understand money better. Beginners, students, parents, side-hustlers, small business owners. If you're curious and open to learning, you belong here. We have no 'too young' or 'too old.'"
+    },
+    {
+      "q": "Is the starter course really free?",
+      "a": "Yes. Always will be. We believe everyone deserves a fair introduction to financial literacy. After that, you can explore premium courses if you want deeper dives into investing, tax strategy, or business. But the foundation? Free."
+    },
+    {
+      "q": "How much time do I need to commit?",
+      "a": "10–15 minutes per lesson. That's it. Most people do one lesson a week. Some do two. You set the pace. Life is busy—we get it. We designed lessons you can actually fit into your day."
+    },
+    {
+      "q": "What if I have questions?",
+      "a": "Ask. Our coaches respond within 24 hours. No dumb questions here. We're human too, and we remember how scary money talk feels at first. Chat with the community or message a coach directly."
+    },
+    {
+      "q": "Do you have a certificate at the end?",
+      "a": "Yes! After you complete a course, you get a certificate and a digital badge. More importantly, you get real knowledge and confidence. That's what matters."
+    },
+    {
+      "q": "Can I learn offline or download lessons?",
+      "a": "Video lessons can be downloaded on our mobile app. Quizzes and community features require internet. We're working on better offline support for areas with spotty connectivity."
+    }
+  ],
+  "seo": {
+    "title": "About — Cognition Berries | Financial lessons for beginners",
+    "description": "Learn how Cognition Berries is making financial education simple, kind, and accessible. From a kitchen table to a global community of 12,000+ learners.",
+    "keywords": [
+      "financial education",
+      "beginner investing",
+      "financial literacy",
+      "money management",
+      "investment courses"
+    ],
+    "ogTitle": "Cognition Berries — Small lessons. Big freedom.",
+    "ogDescription": "Making financial education simple, kind, and practical. Join 12,000+ learners building wealth one small habit at a time.",
+    "ogImage": "https://cognitionberries.com/og-about.png",
+    "ogImageAlt": "Cognition Berries hero: colorful berries with the headline 'Small lessons. Big freedom.'"
+  },
+  "i18n": {
+    "south_african_english": {
+      "hero": {
+        "headline": "Slim lesse. Groot vryheid.",
+        "subheadline": "Ons leer jou geld so soos jy iemand 'n fiets leer – tree vir tree, vriendelik, en met regte oefening. Begin met ons gratis les."
+      },
+      "story": {
+        "short": "Van 'n kombuistafel tot 'n globale gemeenskap. Cognition Berries het begin in 2020 toe Amara iets uiters lastig opgemerk het: jongmense het drome gehad, maar niemand het hulle geleer hoe om geld te verstaan nie."
+      },
+      "mission": {
+        "text": "Om finansiële opvoeding eenvoudig, vriendelik en prakties te maak sodat mense rykdom kan bou, een klein gewoonte op 'n tyd."
+      }
+    }
+  }
+}

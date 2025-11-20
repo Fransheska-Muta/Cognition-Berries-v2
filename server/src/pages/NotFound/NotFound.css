@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+:root {
+  --neon-blue: #00f5ff;
+  --neon-pink: #ff007f;
+  --bg-dark: #0a0a0a;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.notfound-container {
+  height: 100vh;
+  width: 100%;
+  background: var(--bg-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Orbitron', sans-serif;
+  color: var(--neon-blue);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glitch Effect */
+.glitch-wrapper {
+  text-align: center;
+}
+
+.glitch {
+  font-size: 8rem;
+  font-weight: bold;
+  position: relative;
+  color: var(--neon-blue);
+  letter-spacing: 8px;
+  animation: flicker 2s infinite alternate;
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: transparent;
+  overflow: hidden;
+  clip: rect(0, 900px, 0, 0);
+}
+
+.glitch::before {
+  left: 2px;
+  text-shadow: -2px 0 var(--neon-pink);
+  animation: glitchTop 2s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+  left: -2px;
+  text-shadow: -2px 0 #00ffea;
+  animation: glitchBottom 2s infinite linear alternate-reverse;
+}
+
+.glitch-sub {
+  font-size: 1.5rem;
+  margin-top: 10px;
+  position: relative;
+  animation: flicker 3s infinite alternate;
+  color: var(--neon-pink);
+}
+
+.glitch-sub::before,
+.glitch-sub::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: transparent;
+  clip: rect(0, 900px, 0, 0);
+}
+
+.glitch-sub::before {
+  text-shadow: -1px 0 var(--neon-blue);
+  animation: glitchTop 3s infinite linear alternate-reverse;
+}
+
+.glitch-sub::after {
+  text-shadow: -1px 0 #fffa00;
+  animation: glitchBottom 3s infinite linear alternate-reverse;
+}
+
+@keyframes glitchTop {
+  0% { clip: rect(10px, 9999px, 30px, 0); }
+  50% { clip: rect(40px, 9999px, 60px, 0); }
+  100% { clip: rect(20px, 9999px, 40px, 0); }
+}
+
+@keyframes glitchBottom {
+  0% { clip: rect(60px, 9999px, 80px, 0); }
+  50% { clip: rect(30px, 9999px, 50px, 0); }
+  100% { clip: rect(70px, 9999px, 90px, 0); }
+}
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.3; }
+}
+
+.home-btn {
+  margin-top: 30px;
+  padding: 12px 30px;
+  border: 2px solid var(--neon-blue);
+  background: transparent;
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.home-btn:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 20px var(--neon-blue);
+}
+
+/* Scanline Overlay */
+.scan-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: scan 5s linear infinite;
+}
+
+@keyframes scan {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}

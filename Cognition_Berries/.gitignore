@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -23,3 +24,11 @@ dist-ssr
 *.sln
 *.sw?
 *.env
+*cypress
+=======
+.env
+node_modules
+Sanje-key.pem
+gnition-berries-firebase-adminsdk-fbsvc-74466cd3b4.json
+firebase-service-account.json
+>>>>>>> 681a4c8c1999a846bc06eb2980501a4bca050f01
