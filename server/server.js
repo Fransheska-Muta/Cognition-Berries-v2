@@ -10,7 +10,10 @@ const cors = require("cors");
 const Paystack = require("paystack-api");
 const admin = require("firebase-admin");
 const path = require("path");
-const dns = require("dns")
+const dns = require("dns");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { body, param, validationResult } = require("express-validator");
 
 dotenv.config();
 
@@ -19,6 +22,55 @@ const PORT = process.env.PORT || 3000;
 const Base_API = "localhost";
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
 const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
+
+// ======================= Security Middleware =======================
+
+// Helmet for security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later."
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 auth attempts per 15 minutes
+  message: "Too many authentication attempts, please try again later."
+});
+
+app.use("/api/", limiter);
+
+// Body parser with size limits
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// CORS configuration
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173").split(",");
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(
@@ -158,6 +210,37 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// ======================= Validation Middleware =======================
+
+/**
+ * Validate request inputs and return 400 if validation fails
+ */
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ 
+      error: "Validation failed", 
+      details: errors.array() 
+    });
+  }
+  next();
+};
+
+/**
+ * Sanitize string inputs to prevent injection attacks
+ */
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return input;
+  return input.replace(/[<>]/g, '');
+};
+
+/**
+ * Validate ObjectId format
+ */
+const isValidObjectId = (id) => {
+  return ObjectId.isValid(id) && String(new ObjectId(id)) === id;
+};
 
 // ----------------------- Auth middleware -----------------------
 async function requireAuth(req, res, next) {
@@ -326,7 +409,7 @@ app.post("/users", async (req, res) => {
 // ----------------------- Public Courses (browseable) -----------------------
 // Make courses browseable without requiring Firebase auth so the app can show available courses.
 // This also ensures the DB connection is established and logs collection diagnostics to help troubleshooting.
-app.get("/courses", requireAuth, async (req, res) => {
+app.get("/courses", requireAuth,async (req, res) => {
   try {
     if (!db) {
       await connectToMongo();
@@ -336,6 +419,7 @@ app.get("/courses", requireAuth, async (req, res) => {
 
     const courses = await db.collection("material-courses")
       .aggregate([
+        // Step 1: Convert image string to ObjectId if valid
         {
           $addFields: {
             imageObjectId: {
@@ -344,6 +428,7 @@ app.get("/courses", requireAuth, async (req, res) => {
                   $and: [
                     { $ne: ["$image", null] },
                     { $ne: ["$image", ""] },
+                    { $eq: [{ $strLenCP: "$image" }, 24] },
                     { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
                   ]
                 },
@@ -353,6 +438,7 @@ app.get("/courses", requireAuth, async (req, res) => {
             }
           }
         },
+        // Step 2: Lookup image data
         {
           $lookup: {
             from: "images",
@@ -361,15 +447,36 @@ app.get("/courses", requireAuth, async (req, res) => {
             as: "imageData"
           }
         },
+        // Step 3: Unwind imageData
         {
           $unwind: {
             path: "$imageData",
             preserveNullAndEmptyArrays: true
           }
         },
+        // Step 4: Extract displayImage from imageData.data
+        {
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: { 
+                  $and: [
+                    { $ne: ["$imageData", null] },
+                    { $ne: ["$imageData.data", null] },
+                    { $ne: ["$imageData.data", ""] }
+                  ]
+                },
+                then: "$imageData.data",
+                else: null
+              }
+            }
+          }
+        },
+        // Step 5: Clean up - remove temporary fields
         {
           $project: {
-            imageObjectId: 0
+            imageObjectId: 0,
+            imageData: 0
           }
         }
       ])
@@ -377,17 +484,34 @@ app.get("/courses", requireAuth, async (req, res) => {
 
     console.log(`✅ Fetched ${courses.length} courses`);
     
-    // Log image data availability for debugging
-    courses.forEach(course => {
-      const hasImageData = !!(course.imageData && course.imageData.data);
-      const hasDirectImage = !!course.image;
-      console.log(`Course: ${course.title}, hasImageData: ${hasImageData}, hasDirectImage: ${hasDirectImage}`);
-    });
+    // Diagnostic logging
+    const withDisplay = courses.filter(c => c.displayImage).length;
+    const withImageId = courses.filter(c => c.image).length;
+    const withoutImage = courses.filter(c => !c.image).length;
+    
+    console.log(`📊 Image Stats:`);
+    console.log(`   - Total courses: ${courses.length}`);
+    console.log(`   - With image IDs: ${withImageId}`);
+    console.log(`   - With displayImage (base64): ${withDisplay}`);
+    console.log(`   - Without images: ${withoutImage}`);
+    
+    // Detailed sample
+    if (courses.length > 0) {
+      const sample = courses[0];
+      console.log(`\n📝 Sample (${sample.title}):`);
+      console.log(`   - image: ${sample.image || 'NONE'}`);
+      console.log(`   - displayImage: ${sample.displayImage ? 
+        `${sample.displayImage.substring(0, 60)}... (${sample.displayImage.length} chars)` : 
+        'NONE'}`);
+    }
 
     res.json(courses);
   } catch (err) {
     console.error("❌ Failed to fetch courses:", err);
-    res.status(500).json({ error: "Failed to fetch courses", details: err.message });
+    res.status(500).json({ 
+      error: "Failed to fetch courses", 
+      details: err.message 
+    });
   }
 });
 
@@ -406,11 +530,111 @@ app.get("/reviews", requireAuth, async (req, res) => {
 
 app.get("/material-books", requireAuth, async (req, res) => {
   try {
-    const books = await db.collection("material-books").find().toArray();
+    if (!db) {
+      await connectToMongo();
+    }
+
+    console.log("📚 Fetching books with images...");
+
+    const books = await db.collection("material-books")
+      .aggregate([
+        // Step 1: Convert image string to ObjectId if valid
+        {
+          $addFields: {
+            imageObjectId: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$image", null] },
+                    { $ne: ["$image", ""] },
+                    { $eq: [{ $strLenCP: "$image" }, 24] },
+                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
+                  ]
+                },
+                then: { $toObjectId: "$image" },
+                else: null
+              }
+            }
+          }
+        },
+        // Step 2: Lookup image data
+        {
+          $lookup: {
+            from: "images",
+            localField: "imageObjectId",
+            foreignField: "_id",
+            as: "imageData"
+          }
+        },
+        // Step 3: Unwind imageData
+        {
+          $unwind: {
+            path: "$imageData",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        // Step 4: Extract displayImage from imageData.data
+        {
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: { 
+                  $and: [
+                    { $ne: ["$imageData", null] },
+                    { $ne: ["$imageData.data", null] },
+                    { $ne: ["$imageData.data", ""] }
+                  ]
+                },
+                then: "$imageData.data",
+                else: null
+              }
+            }
+          }
+        },
+        // Step 5: Clean up - remove temporary fields
+        {
+          $project: {
+            imageObjectId: 0,
+            imageData: 0
+          }
+        },
+        // Step 6: Sort by upload date (newest first)
+        {
+          $sort: { updatedAt: -1 }
+        }
+      ])
+      .toArray();
+
+    console.log(`✅ Fetched ${books.length} books`);
+    
+    // Diagnostic logging
+    const withDisplay = books.filter(b => b.displayImage).length;
+    const withImageId = books.filter(b => b.image).length;
+    const withoutImage = books.filter(b => !b.image).length;
+    
+    console.log(`📊 Book Image Stats:`);
+    console.log(`   - Total books: ${books.length}`);
+    console.log(`   - With image IDs: ${withImageId}`);
+    console.log(`   - With displayImage (base64): ${withDisplay}`);
+    console.log(`   - Without images: ${withoutImage}`);
+    
+    // Detailed sample
+    if (books.length > 0) {
+      const sample = books[0];
+      console.log(`\n🔍 Sample (${sample.title}):`);
+      console.log(`   - image: ${sample.image || 'NONE'}`);
+      console.log(`   - displayImage: ${sample.displayImage ? 
+        `${sample.displayImage.substring(0, 60)}... (${sample.displayImage.length} chars)` : 
+        'NONE'}`);
+    }
+
     res.json(books);
   } catch (err) {
-    console.error("Failed to fetch books:", err);
-    res.status(500).json({ error: "Failed to fetch books" });
+    console.error("❌ Failed to fetch books:", err);
+    res.status(500).json({ 
+      error: "Failed to fetch books", 
+      details: err.message 
+    });
   }
 });
 
@@ -545,32 +769,23 @@ app.post("/courses", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-app.get("/courses/:id", async (req, res) => {
+app.get("/courses", requireAuth, async (req, res) => {
   try {
-    const idParam = req.params.id;
-    
-    // Build match query for course_id or _id
-    const matchQuery = {
-      $or: [
-        { course_id: idParam }
-      ]
-    };
-    
-    if (ObjectId.isValid(idParam)) {
-      matchQuery.$or.push({ _id: new ObjectId(idParam) });
-    }
+    if (!db) await connectToMongo();
 
     const courses = await db.collection("material-courses")
       .aggregate([
-        { $match: matchQuery },
         {
           $addFields: {
             imageObjectId: {
               $cond: {
-                if: { $and: [
-                  { $ne: ["$image", null] },
-                  { $ne: ["$image", ""] }
-                ]},
+                if: {
+                  $and: [
+                    { $ne: ["$image", null] },
+                    { $ne: ["$image", ""] },
+                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
+                  ]
+                },
                 then: { $toObjectId: "$image" },
                 else: null
               }
@@ -599,14 +814,10 @@ app.get("/courses/:id", async (req, res) => {
       ])
       .toArray();
 
-    if (courses.length === 0) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    res.json(courses[0]);
+    res.json(courses);
   } catch (err) {
-    console.error("Failed to get course with image:", err);
-    res.status(500).json({ error: "Failed to get course" });
+    console.error("Failed to fetch courses:", err);
+    res.status(500).json({ error: "Failed to fetch courses" });
   }
 });
 
@@ -1279,6 +1490,8 @@ app.get("/user/all-progress", requireAuth, async (req, res) => {
 // ADMIN ROUTES - Progress Management
 // ==========================================
 
+
+
 // GET: View any user's progress (admin only)
 app.get("/admin/progress/:userId/:courseId", requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -1346,6 +1559,26 @@ app.post("/admin/progress/reset", requireAuth, requireAdmin, async (req, res) =>
 
 
 // ----------------------- Reviews Management -----------------------
+app.get("/review", async (req, res) => {
+  try {
+    const courses = await db.collection("reviews").find().toArray();
+
+    // Flatten nested course reviews
+    const allReviews = courses.flatMap(course =>
+      course.reviews.map(r => ({
+        courseId: course.courseId,
+        courseName: course.courseName,
+        ...r
+      }))
+    );
+
+    res.json(allReviews);
+  } catch (err) {
+    console.error("Failed to fetch reviews:", err);
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+});
+
 app.get("/reviews", requireAuth, async (req, res) => {
   try {
     const courses = await db.collection("reviews").find().toArray();
@@ -2249,7 +2482,10 @@ app.post("/material-books", requireAuth, requireAdmin, async (req, res) => {
     const book = {
       ...req.body,
       createdAt: new Date(),
-      createdBy: req.user.uid
+      createdBy: req.user.uid,
+      views: 0,
+      downloads: 0,
+      ratings: []
     };
     const result = await db.collection("material-books").insertOne(book);
     res.status(201).json({ _id: result.insertedId, ...book });
@@ -2259,18 +2495,185 @@ app.post("/material-books", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+app.post("/material-books/:id/image", 
+  requireAuth, 
+  requireAdmin,
+  [
+    param('id').notEmpty().withMessage('Book ID is required'),
+    body('image').notEmpty().withMessage('Image data is required'),
+    body('filename').optional().isString()
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { image, filename } = req.body;
+      const bookId = req.params.id;
+      
+      // Validate book exists
+      const book = await db.collection("material-books").findOne({
+        $or: [
+          { book_id: bookId },
+          { _id: isValidObjectId(bookId) ? new ObjectId(bookId) : null }
+        ]
+      });
+      
+      if (!book) {
+        return res.status(404).json({ error: "Book not found" });
+      }
+      
+      // Validate base64 image
+      if (!image.startsWith('data:image/')) {
+        return res.status(400).json({ error: "Invalid image format. Must be data URL" });
+      }
+      
+      const matches = image.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        return res.status(400).json({ error: "Invalid base64 image format" });
+      }
+      
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+      
+      // Check size (max 5MB)
+      const sizeInBytes = (base64Data.length * 3) / 4;
+      const sizeInMB = sizeInBytes / (1024 * 1024);
+      
+      if (sizeInMB > 5) {
+        return res.status(400).json({ 
+          error: `Image too large (${sizeInMB.toFixed(2)}MB). Maximum 5MB` 
+        });
+      }
+      
+      // Delete old image if exists
+      if (book.image && isValidObjectId(book.image)) {
+        await db.collection("images").deleteOne({ 
+          _id: new ObjectId(book.image) 
+        });
+      }
+      
+      // Create new image document
+      const imageDoc = {
+        filename: sanitizeInput(filename) || `book_${bookId}_${Date.now()}.${mimeType}`,
+        mimeType: `image/${mimeType}`,
+        size: sizeInBytes,
+        data: image,
+        type: 'book_cover',
+        bookId: bookId,
+        uploadedAt: new Date(),
+        uploadedBy: req.user.uid
+      };
+      
+      const result = await db.collection("images").insertOne(imageDoc);
+      
+      // Update book with new image reference
+      await db.collection("material-books").updateOne(
+        {
+          $or: [
+            { book_id: bookId },
+            { _id: isValidObjectId(bookId) ? new ObjectId(bookId) : null }
+          ]
+        },
+        {
+          $set: {
+            image: result.insertedId.toString(),
+            imageType: 'base64',
+            imageUrl: `/api/images/${result.insertedId}`,
+            updatedAt: new Date(),
+            updatedBy: req.user.uid
+          }
+        }
+      );
+      
+      res.json({
+        message: "Book cover uploaded successfully",
+        imageId: result.insertedId.toString(),
+        imageUrl: `/api/images/${result.insertedId}`
+      });
+      
+    } catch (err) {
+      console.error("Book cover upload error:", err);
+      res.status(500).json({ error: "Failed to upload book cover" });
+    }
+  }
+);
+
 app.get("/material-books/:id", async (req, res) => {
   try {
-    const book = await db.collection("material-books").findOne({
-      $or: [
-        { book_id: req.params.id },
-        { _id: ObjectId.isValid(req.params.id) ? new ObjectId(req.params.id) : null }
-      ]
-    });
-    book ? res.json(book) : res.status(404).json({ message: "Book not found" });
+    const bookId = req.params.id;
+    
+    const book = await db.collection("material-books")
+      .aggregate([
+        // Match the specific book
+        {
+          $match: {
+            $or: [
+              { book_id: bookId },
+              { _id: ObjectId.isValid(bookId) ? new ObjectId(bookId) : null }
+            ]
+          }
+        },
+        // Convert image string to ObjectId
+        {
+          $addFields: {
+            imageObjectId: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$image", null] },
+                    { $ne: ["$image", ""] },
+                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
+                  ]
+                },
+                then: { $toObjectId: "$image" },
+                else: null
+              }
+            }
+          }
+        },
+        // Lookup image
+        {
+          $lookup: {
+            from: "images",
+            localField: "imageObjectId",
+            foreignField: "_id",
+            as: "imageData"
+          }
+        },
+        {
+          $unwind: {
+            path: "$imageData",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        // Add displayImage
+        {
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: { $ne: ["$imageData.data", null] },
+                then: "$imageData.data",
+                else: null
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            imageObjectId: 0,
+            imageData: 0
+          }
+        }
+      ])
+      .toArray();
+
+    if (!book || book.length === 0) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    res.json(book[0]);
   } catch (err) {
-    console.error("Failed to get book:", err);
-    res.status(500).json({ error: "Failed to get book" });
+    console.error("Failed to fetch book:", err);
+    res.status(500).json({ error: "Failed to fetch book" });
   }
 });
 
@@ -2293,6 +2696,7 @@ app.put("/material-books/:id", requireAuth, requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Failed to update book" });
   }
 });
+
 
 app.delete("/material-books/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -2430,39 +2834,445 @@ app.get("/dashboard/user", requireAuth, async (req, res) => {
   }
 });
 
+/* ======================= Admin Dashboard Endpoint ======================= */
+
+/**
+ * GET /dashboard/admin
+ * Returns aggregated dashboard statistics for admins
+ * Query params: ?range=7d|30d|90d&page=1&limit=20
+ */
 app.get("/dashboard/admin", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const users = await db.collection("Users").find().toArray();
-    const courses = await db.collection("material-courses").find().toArray();
-    const orders = await db.collection("order-summary").find().toArray();
-    const transactions = await db.collection("transactions").find().toArray();
-    const reviews = await db.collection("reviews").find().toArray();
+    const { range = '7d', page = 1, limit = 20 } = req.query;
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+    switch(range) {
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case '7d':
+      default:
+        startDate.setDate(now.getDate() - 7);
+    }
 
-    // Stats
-    const totalUsers = users.length;
-    const revenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-    const completionRate = orders.length ? Math.round((orders.filter(o => o.status === "Completed").length / orders.length) * 100) : 0;
-    const avgRating = reviews.length ? Math.round(reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length) : 0;
+    // Fetch all data in parallel
+    const [users, courses, orders, transactions, reviews] = await Promise.all([
+      db.collection("Users").find().toArray(),
+      db.collection("material-courses").find().toArray(),
+      db.collection("order-summary").find().toArray(),
+      db.collection("transactions").find().toArray(),
+      db.collection("reviews").find().toArray()
+    ]);
+
+    // Calculate stats
+    const activeUsers = users.filter(u => {
+      const joinDate = u.createdAt ? new Date(u.createdAt) : startDate;
+      return joinDate >= startDate;
+    }).length;
+
+    const totalRevenue = transactions
+      .filter(t => new Date(t.created_at) >= startDate)
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+    const completedOrders = orders.filter(o => o.status === 'Completed').length;
+    const completionRate = orders.length > 0 
+      ? Math.round((completedOrders / orders.length) * 100) 
+      : 0;
+
+    const allReviews = reviews.flatMap(r => r.reviews || []);
+    const averageScore = allReviews.length > 0
+      ? Math.round((allReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / allReviews.length) * 10) / 10
+      : 0;
 
     // Top performers
     const userStats = {};
     orders.forEach(order => {
-      if (!userStats[order.userEmail]) userStats[order.userEmail] = { email: order.userEmail, spent: 0 };
-      userStats[order.userEmail].spent += order.totalAmount || 0;
+      if (!userStats[order.userEmail]) {
+        userStats[order.userEmail] = {
+          email: order.userEmail,
+          orders: 0,
+          totalSpent: 0,
+          courses: 0
+        };
+      }
+      userStats[order.userEmail].orders++;
+      userStats[order.userEmail].totalSpent += order.totalAmount || 0;
+      userStats[order.userEmail].courses += order.items?.length || 1;
     });
-    const topPerformers = Object.values(userStats).sort((a, b) => b.spent - a.spent).slice(0, 5);
 
+    const topPerformers = Object.values(userStats)
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 5);
+
+    // Recent orders with pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const recentOrders = orders
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(skip, skip + parseInt(limit));
+
+    // Recent transactions
+    const recentTransactions = transactions
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 10)
+      .map(t => ({
+        id: t.payment_id || t._id,
+        type: 'payment',
+        user: t.email,
+        amount: t.amount,
+        status: t.status,
+        date: t.created_at
+      }));
+
+    // System alerts
+    const systemAlerts = [];
+    if (activeUsers > 10) {
+      systemAlerts.push({
+        type: 'success',
+        icon: 'TrendingUp',
+        title: 'User Growth',
+        message: `${activeUsers} new users in the last ${range}`
+      });
+    }
+
+    const failedTransactions = transactions.filter(t => t.status === 'failed');
+    if (failedTransactions.length > 0) {
+      systemAlerts.push({
+        type: 'warning',
+        icon: 'AlertTriangle',
+        title: 'Payment Issues',
+        message: `${failedTransactions.length} failed transactions need attention`
+      });
+    }
+
+    // Response
     res.json({
-      stats: { totalUsers, revenue, completionRate, avgRating, courses: courses.length },
+      stats: {
+        totalUsers: users.length,
+        activeUsers,
+        revenue: totalRevenue,
+        courses: courses.length,
+        completionRate,
+        averageScore
+      },
       topPerformers,
-      recentOrders: orders.slice(-10).reverse(),
-      systemAlerts: []
+      recentOrders,
+      recentTransactions,
+      systemAlerts,
+      courses: courses.slice(skip, skip + parseInt(limit)),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: courses.length
+      }
     });
+
   } catch (err) {
     console.error("Admin dashboard error:", err);
     res.status(500).json({ error: "Failed to fetch admin dashboard" });
   }
 });
+
+// ======================= Image Management =======================
+
+/**
+ * POST /courses/:id
+ * Upload course image (base64)
+ * Body: { image: "data:image/png;base64,...", filename: "cover.png" }
+ */
+
+app.get("/courses/:id", async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    
+    const course = await db.collection("material-courses")
+      .aggregate([
+        // Match the specific course
+        {
+          $match: {
+            $or: [
+              { course_id: courseId },
+              { _id: ObjectId.isValid(courseId) ? new ObjectId(courseId) : null }
+            ]
+          }
+        },
+        // Convert image string to ObjectId
+        {
+          $addFields: {
+            imageObjectId: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$image", null] },
+                    { $ne: ["$image", ""] },
+                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
+                  ]
+                },
+                then: { $toObjectId: "$image" },
+                else: null
+              }
+            }
+          }
+        },
+        // Lookup image
+        {
+          $lookup: {
+            from: "images",
+            localField: "imageObjectId",
+            foreignField: "_id",
+            as: "imageData"
+          }
+        },
+        {
+          $unwind: {
+            path: "$imageData",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        // Add displayImage
+        {
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: { $ne: ["$imageData.data", null] },
+                then: "$imageData.data",
+                else: null
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            imageObjectId: 0,
+            imageData: 0
+          }
+        }
+      ])
+      .toArray();
+
+    if (!course || course.length === 0) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    res.json(course[0]);
+  } catch (err) {
+    console.error("Failed to fetch course:", err);
+    res.status(500).json({ error: "Failed to fetch course" });
+  }
+});
+
+app.post("/courses/:id", 
+  requireAuth, 
+  requireAdmin,
+  [
+    param('id').notEmpty().withMessage('Course ID is required'),
+    body('image').notEmpty().withMessage('Image data is required'),
+    body('filename').optional().isString()
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { image, filename } = req.body;
+      const courseId = req.params.id;
+      
+      // Validate course exists
+      const course = await db.collection("material-courses").findOne({
+        $or: [
+          { course_id: courseId },
+          { _id: isValidObjectId(courseId) ? new ObjectId(courseId) : null }
+        ]
+      });
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      // Validate base64 image
+      if (!image.startsWith('data:image/')) {
+        return res.status(400).json({ error: "Invalid image format. Must be data URL" });
+      }
+      
+      const matches = image.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        return res.status(400).json({ error: "Invalid base64 image format" });
+      }
+      
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+      
+      // Validate MIME type
+      const allowedMimeTypes = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+      if (!allowedMimeTypes.includes(mimeType.toLowerCase())) {
+        return res.status(400).json({ 
+          error: `Invalid image type. Allowed: ${allowedMimeTypes.join(', ')}` 
+        });
+      }
+      
+      // Check size (max 5MB)
+      const sizeInBytes = (base64Data.length * 3) / 4;
+      const sizeInMB = sizeInBytes / (1024 * 1024);
+      
+      if (sizeInMB > 5) {
+        return res.status(400).json({ 
+          error: `Image too large (${sizeInMB.toFixed(2)}MB). Maximum 5MB` 
+        });
+      }
+      
+      // Delete old image if exists
+      if (course.image && isValidObjectId(course.image)) {
+        await db.collection("images").deleteOne({ 
+          _id: new ObjectId(course.image) 
+        });
+        console.log(`🗑️ Deleted old image: ${course.image}`);
+      }
+      
+      // Create new image document
+      const imageDoc = {
+        filename: sanitizeInput(filename) || `course_${courseId}_${Date.now()}.${mimeType}`,
+        mimeType: `image/${mimeType}`,
+        size: sizeInBytes,
+        data: image, // Store complete data URL
+        type: 'course_image',
+        courseId: courseId,
+        uploadedAt: new Date(),
+        uploadedBy: req.user.uid
+      };
+      
+      const result = await db.collection("images").insertOne(imageDoc);
+      console.log(`✅ Created image document: ${result.insertedId}`);
+      
+      // Update course with new image reference
+      await db.collection("material-courses").updateOne(
+        {
+          $or: [
+            { course_id: courseId },
+            { _id: isValidObjectId(courseId) ? new ObjectId(courseId) : null }
+          ]
+        },
+        {
+          $set: {
+            image: result.insertedId.toString(),
+            imageType: 'base64',
+            imageUrl: `/api/images/${result.insertedId}`,
+            updatedAt: new Date(),
+            updatedBy: req.user.uid
+          }
+        }
+      );
+      
+      res.json({
+        message: "Course image uploaded successfully",
+        imageId: result.insertedId.toString(),
+        imageUrl: `/api/images/${result.insertedId}`,
+        size: `${sizeInMB.toFixed(2)}MB`
+      });
+      
+    } catch (err) {
+      console.error("Course image upload error:", err);
+      res.status(500).json({ error: "Failed to upload course image" });
+    }
+  }
+);
+
+/**
+ * GET /api/images/:imageId
+ * Retrieve image by ID
+ * Returns: { id, data, mimeType, filename, uploadedAt }
+ */
+app.get("/api/images/:imageId", 
+  [param('imageId').custom(id => isValidObjectId(id))],
+  async (req, res) => {
+    try {
+      const { imageId } = req.params;
+      
+      if (!isValidObjectId(imageId)) {
+        return res.status(400).json({ error: "Invalid image ID format" });
+      }
+      
+      const image = await db.collection("images").findOne({ 
+        _id: new ObjectId(imageId) 
+      });
+      
+      if (!image) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+      
+      // Return JSON with data URL
+      res.json({
+        id: image._id.toString(),
+        data: image.data,
+        mimeType: image.mimeType,
+        filename: image.filename,
+        uploadedAt: image.uploadedAt,
+        size: image.size
+      });
+      
+    } catch (err) {
+      console.error("Image retrieval error:", err);
+      res.status(500).json({ error: "Failed to retrieve image" });
+    }
+  }
+);
+
+/**
+ * DELETE /courses/:id/image
+ * Delete course image
+ */
+app.delete("/courses/:id/image",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const courseId = req.params.id;
+      
+      const course = await db.collection("material-courses").findOne({
+        $or: [
+          { course_id: courseId },
+          { _id: isValidObjectId(courseId) ? new ObjectId(courseId) : null }
+        ]
+      });
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (!course.image) {
+        return res.status(400).json({ error: "Course has no image" });
+      }
+      
+      // Delete image document
+      if (isValidObjectId(course.image)) {
+        await db.collection("images").deleteOne({ 
+          _id: new ObjectId(course.image) 
+        });
+      }
+      
+      // Update course
+      await db.collection("material-courses").updateOne(
+        {
+          $or: [
+            { course_id: courseId },
+            { _id: isValidObjectId(courseId) ? new ObjectId(courseId) : null }
+          ]
+        },
+        {
+          $unset: { image: "", imageUrl: "", imageType: "" },
+          $set: { updatedAt: new Date(), updatedBy: req.user.uid }
+        }
+      );
+      
+      res.json({ message: "Course image deleted successfully" });
+      
+    } catch (err) {
+      console.error("Image deletion error:", err);
+      res.status(500).json({ error: "Failed to delete image" });
+    }
+  }
+);
 
 // ----------------------- Enrollment Management -----------------------
 // GET user's enrollments (courses they are enrolled in)
@@ -2666,11 +3476,19 @@ app.post("/api/paystack/callback", async (req, res) => {
 });
 
 // ----------------------- Error Handling -----------------------
-app.use((req, res) => res.status(404).json({ error: "Not found" }));
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: "Not found", 
+    path: req.path 
+  });
+});
 
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
-  res.status(500).json({ error: "Internal server error" });
+  res.status(err.status || 500).json({ 
+    error: err.message || "Internal server error",
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
 // ----------------------- Server Start -----------------------
