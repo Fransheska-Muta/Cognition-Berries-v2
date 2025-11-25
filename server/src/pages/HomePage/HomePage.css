@@ -552,6 +552,7 @@
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--neutral-light);
   gap: var(--spacing-md);
+  /* color:white !important; */
 }
 
 .prce-btn p {
@@ -566,7 +567,7 @@
 .view-course-btn {
   padding: 0.875rem 1.75rem;
   background: linear-gradient(135deg, var(--primary-red), var(--primary-maroon));
-  color: white;
+  color: white !important;
   border-radius: var(--radius-md);
   font-weight: 600;
   text-decoration: none;

@@ -409,6 +409,7 @@ app.post("/users", async (req, res) => {
 // ----------------------- Public Courses (browseable) -----------------------
 // Make courses browseable without requiring Firebase auth so the app can show available courses.
 // This also ensures the DB connection is established and logs collection diagnostics to help troubleshooting.
+<<<<<<< HEAD
 app.get("/courses", requireAuth,async (req, res) => {
   try {
     if (!db) {
@@ -512,9 +513,42 @@ app.get("/courses", requireAuth,async (req, res) => {
       error: "Failed to fetch courses", 
       details: err.message 
     });
+=======
+// Replace the GET /courses endpoint in server.js with this:
+
+
+
+// Also add a dedicated endpoint to fetch individual images if needed
+app.get("/api/images/:imageId", async (req, res) => {
+  try {
+    const { imageId } = req.params;
+    
+    if (!ObjectId.isValid(imageId)) {
+      return res.status(400).json({ error: "Invalid image ID" });
+    }
+    
+    const image = await db.collection("images").findOne({ 
+      _id: new ObjectId(imageId) 
+    });
+    
+    if (!image) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+    
+    // Return the image data directly
+    res.json({
+      id: image._id,
+      data: image.data,
+      mimeType: image.mimeType,
+      filename: image.filename
+    });
+    
+  } catch (err) {
+    console.error("❌ Image retrieval error:", err);
+    res.status(500).json({ error: "Failed to retrieve image" });
+>>>>>>> 732ba949ab3c45db0c17a4150721fbc4b066281d
   }
 });
-
 // ----------------------- Protected routes (requireAuth) -----------------------
 
 // All other routes below require authentication (and admin where needed)
@@ -528,6 +562,7 @@ app.get("/reviews", requireAuth, async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 app.get("/material-books", requireAuth, async (req, res) => {
   try {
     if (!db) {
@@ -637,6 +672,13 @@ app.get("/material-books", requireAuth, async (req, res) => {
     });
   }
 });
+=======
+// Replace the /courses GET endpoint in server.js (around line 473)
+
+// This fixes the aggregation error AND adds placeholder images
+
+
+>>>>>>> 732ba949ab3c45db0c17a4150721fbc4b066281d
 
 // Public forum posts (read-only)
 app.get("/forum-posts", async (req, res) => {
@@ -2476,7 +2518,54 @@ async function restoreScheduledReminders() {
 
 module.exports = { restoreScheduledReminders };
 
+
 // ----------------------- Material Books Management -----------------------
+
+// Add this GET endpoint for all books - place it before the /material-books/:id endpoint
+app.get("/material-books", async (req, res) => {
+  console.log("📚 Fetching books and Images..............");
+  try {
+    // Simple query without aggregation first
+    const books = await db.collection("material-books").find({}).toArray();
+    
+    // Then fetch images separately for books that have image references
+    const booksWithImages = await Promise.all(
+      books.map(async (book) => {
+        if (book.image && ObjectId.isValid(book.image)) {
+          try {
+            const imageDoc = await db.collection("images").findOne({ 
+              _id: new ObjectId(book.image) 
+            });
+            return {
+              ...book,
+              displayImage: imageDoc ? imageDoc.data : null,
+              hasImage: !!imageDoc
+            };
+          } catch (imageErr) {
+            console.warn(`⚠️ Could not fetch image for book ${book._id}`);
+            return {
+              ...book,
+              displayImage: null,
+              hasImage: false
+            };
+          }
+        }
+        return {
+          ...book,
+          displayImage: null,
+          hasImage: false
+        };
+      })
+    );
+
+    console.log(`✅ Found ${booksWithImages.length} books`);
+    res.json(booksWithImages);
+  } catch (err) {
+    console.error("❌ Failed to fetch books:", err);
+    res.status(500).json({ error: "Failed to fetch books" });
+  }
+});
+
 app.post("/material-books", requireAuth, requireAdmin, async (req, res) => {
   try {
     const book = {
@@ -2663,7 +2752,11 @@ app.get("/material-books/:id", async (req, res) => {
             imageData: 0
           }
         }
+<<<<<<< HEAD
       ])
+=======
+      ],{ allowDiskUse: true })
+>>>>>>> 732ba949ab3c45db0c17a4150721fbc4b066281d
       .toArray();
 
     if (!book || book.length === 0) {
