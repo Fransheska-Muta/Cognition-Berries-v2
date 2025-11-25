@@ -8,7 +8,6 @@ import UserDashboard from "./pages/Dashboard/User Dashboard/UserDashboard"
 import LandingPage from "./pages/LandingPage/LandingPage"
 import AboutUs from "./pages/AboutPage/AboutPage"
 import Courses from "./pages/Courses/Courses"
-import CommunityForum from "./pages/ComminityForum/ComminityForum"
 import CartPage from "./pages/Cart/CartPage"
 import ExtraMaterial from "./pages/ExtraMaterial/ExtraMaterial"
 import CheckoutPage from "./pages/CheckoutPage/CheckoutPage"
@@ -22,6 +21,7 @@ import PhoneLogin from "./pages/AuthPages/PhoneLogin"
 import { isAuthenticated } from "./utils/auth"
 import BookDetail from "./pages/Book Details/BookDetails"
 import Blog from "./pages/BlogPage/BlogPage"
+import ForumHome from "./pages/ComminityForum/ForumHome"
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to='/login' replace />;
@@ -42,7 +42,7 @@ function App() {
         <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
         <Route path='/dashboard' element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-        <Route path='/community-forum' element={<ProtectedRoute><CommunityForum /></ProtectedRoute>} />
+        <Route path='/community-forum' element={<ProtectedRoute><ForumHome /></ProtectedRoute>} />
         <Route path="/course/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/course/:courseId/learn" element={<ProtectedRoute><CourseLearning /></ProtectedRoute>} />
         <Route path='/extra-material' element={<ProtectedRoute><ExtraMaterial /></ProtectedRoute>} />

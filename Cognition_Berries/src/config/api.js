@@ -2,7 +2,26 @@
 import { auth } from '../utils/firebase';
 
 // Fix API base URL format - ensure proper protocol
-const API_BASE_URL = import.meta.env.VITE_BASE_API || '52.44.223.219'; // Single port, proper protocol format
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_BASE_API;
+  
+  // If no env URL, use default with proper protocol
+  if (!envUrl) {
+    return 'http://52.44.223.219:3000';
+  }
+  
+  // If URL already has protocol, use as-is
+  if (envUrl.startsWith('http://') || envUrl.startsWith('https://')) {
+    return envUrl;
+  }
+  
+  // Otherwise, add http:// protocol
+  return `http://${envUrl}`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+console.log('🌐 API Base URL configured as:', API_BASE_URL);
 
 export const getAuthHeaders = async () => {
   let user = auth.currentUser;
@@ -14,7 +33,7 @@ export const getAuthHeaders = async () => {
     user = auth.currentUser;
   }
 
-  // 🔁 If still no user, try pulling stored token
+  // 🔍 If still no user, try pulling stored token
   if (!user) {
     const savedToken = localStorage.getItem("authToken");
     if (savedToken) {
@@ -25,7 +44,7 @@ export const getAuthHeaders = async () => {
       };
     }
     console.error("❌ No Firebase user or saved token");
-    return { "Content-Type": "application/json" }; // fallback (won’t crash)
+    throw new Error("Not authenticated"); // Changed to throw error instead of returning fallback
   }
 
   try {
@@ -39,15 +58,15 @@ export const getAuthHeaders = async () => {
     };
   } catch (error) {
     console.error("❌ Error getting token:", error);
-    return { "Content-Type": "application/json" }; // fallback to avoid hard crash
+    throw new Error("Failed to get authentication token");
   }
 };
 
 
 export const apiRequest = async (url, options = {}) => {
   try {
-    // Ensure URL is absolute
-    const fullUrl = url.startsWith('http') ? url :  `${API_BASE_URL}${url}`;
+    // Ensure URL is absolute and properly formatted
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
     console.log('📡 API Request to:', fullUrl);
     
     const headers = await getAuthHeaders();
@@ -69,6 +88,7 @@ export const apiRequest = async (url, options = {}) => {
       if (user) {
         // Force token refresh
         const newToken = await user.getIdToken(true);
+        localStorage.setItem("authToken", newToken);
         console.log('✅ Refreshed token (first 20 chars):', newToken.substring(0, 20) + '...');
         
         const retryResponse = await fetch(fullUrl, {
@@ -109,7 +129,7 @@ export const apiRequest = async (url, options = {}) => {
 
 // Helper for making API calls without auth (for public endpoints)
 export const publicApiRequest = async (url, options = {}) => {
-  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
   try {
     console.log('📡 Public API Request to:', fullUrl);
@@ -141,7 +161,7 @@ export const publicApiRequest = async (url, options = {}) => {
       // If there's an active Firebase user attempt an authenticated retry which forces token attach.
       const user = auth.currentUser;
       if (user) {
-        console.log('🔁 Retrying as authenticated request because user is signed in:', user.email || 'unknown');
+        console.log('🔑 Retrying as authenticated request because user is signed in:', user.email || 'unknown');
         return apiRequest(url, options);
       }
 
@@ -176,9 +196,11 @@ export const API_CONFIG = {
 
 // Add this helper for handling 401/expired auth errors in UI
 export const handleAuthError = (navigateOrCallback) => {
+  console.log("🚪 Handling auth error - clearing tokens and redirecting");
   // Remove tokens and user info
   localStorage.removeItem("authToken");
   localStorage.removeItem("user");
+  
   // If a navigate function is provided, redirect to login
   if (typeof navigateOrCallback === "function") {
     navigateOrCallback("/login");
@@ -190,7 +212,7 @@ export const handleAuthError = (navigateOrCallback) => {
 // Enhanced error handling for cart requests
 export const getCart = async () => {
   try {
-    console.log('📝 Fetching cart from:', `${API_BASE_URL}/cart`);
+    console.log('🛒 Fetching cart from:', `${API_BASE_URL}/cart`);
     const response = await apiRequest("/cart", {
       method: "GET"
     });
@@ -200,10 +222,16 @@ export const getCart = async () => {
     }
     
     const data = await response.json();
+    console.log('✅ Cart data received:', data);
     return data;
   } catch (error) {
     console.error("❌ Failed to fetch cart:", error);
-    // Include more detailed error info
+    // Return empty array instead of throwing for 404 (empty cart is valid)
+    if (error.message.includes('404')) {
+      console.log('📭 Cart is empty (404)');
+      return [];
+    }
+    // Include more detailed error info for other errors
     throw new Error(`Cart fetch failed: ${error.message || 'Network error'}`);
   }
 };

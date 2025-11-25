@@ -279,19 +279,19 @@ function Courses() {
                       </div>
                       <div className="course-card-footer">
                         <div className="course-card-meta">
-                          <div className="course-card-date">
+                          {/* <div className="course-card-date">
                             {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', { 
                               day: 'numeric', 
                               month: 'short', 
                               year: 'numeric' 
                             }) : 'Date N/A'}
-                          </div>
-                          <div className="course-card-price">
+                          </div> */}
+                          {/* <div className="course-card-price">
                             R{course.price || '0'}
                           </div>
                         </div>
                         <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
-                          {course.published ? 'Published' : 'Unpublished'}
+                          {course.published ? 'Published' : 'Unpublished'} */}
                         </div>
                       </div>
                       <div className="course-card-actions">
@@ -351,10 +351,10 @@ function Courses() {
                           year: 'numeric' 
                         }) : 'Date N/A'}
                       </div>
-                      <div className="course-card-price">R{course.price || '0'}</div>
-                      <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
+                      {/* <div className="course-card-price">R{course.price || '0'}</div> */}
+                      {/* <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
                         {course.published ? 'Published' : 'Unpublished'}
-                      </div>
+                      </div> */}
                     </div>
                     <div className="course-list-actions">
                       {(() => {

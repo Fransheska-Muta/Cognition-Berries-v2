@@ -175,7 +175,7 @@ const HomePage = () => {
                     <h3>{course.title}</h3>
                     <p>{course.description || "No description available."}</p>
                     <div className="prce-btn">
-                      <p>{course.price}</p>
+                      <p>Free</p>
                       <Link to={`/course/${course._id}`} className="view-course-btn">View Course</Link>
                     </div>
                   </div>

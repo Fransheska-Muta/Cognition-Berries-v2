@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../../utils/firebase"; 
+import { apiRequest, getAuthHeaders } from "../../config/api";
 import "./CheckoutPage.css";
 
 export default function CheckoutPage() {
   const [checkoutData, setCheckoutData] = useState(null);
-  const BaseAPI = import.meta.env.VITE_BASE_API
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -15,9 +16,11 @@ export default function CheckoutPage() {
     postalCode: "",
     phone: ""
   });
+
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1️⃣ Redirect if no checkoutData
     const data = localStorage.getItem("checkoutData");
     if (!data) {
       navigate("/cart");
@@ -25,36 +28,39 @@ export default function CheckoutPage() {
     }
     setCheckoutData(JSON.parse(data));
 
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user.email) {
-      setFormData(prev => ({
-        ...prev,
-        email: user.email,
-        firstName: user.firstName || user.name?.split(" ")[0] || "",
-        lastName: user.lastName || user.name?.split(" ").slice(1).join(" ") || ""
-      }));
-    }
+    // 2️⃣ Load Firebase user
+    const unsub = auth.onAuthStateChanged((user) => {
+      if (!user) return; // user not signed in
 
-    // Load Paystack script dynamically
+      const nameParts = user.displayName?.split(" ") || [];
+
+      setFormData((prev) => ({
+        ...prev,
+        email: user.email || "",
+        firstName: nameParts[0] || prev.firstName,
+        lastName: nameParts.slice(1).join(" ") || prev.lastName,
+      }));
+    });
+
+    // 3️⃣ Load Paystack script
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.async = true;
     document.body.appendChild(script);
+
+    return () => unsub();
   }, [navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const validateForm = () => {
     const required = ["email", "firstName", "lastName", "address", "city", "postalCode", "phone"];
     for (let field of required) {
       if (!formData[field].trim()) {
-        alert(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+        alert(`Please fill in ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`);
         return false;
       }
     }
@@ -73,91 +79,88 @@ export default function CheckoutPage() {
   };
 
   const handlePaystackPayment = () => {
-  const handler = window.PaystackPop.setup({
-    key: "pk_test_xxxxxxxx", // Replace with your public key
-    email: "customer@email.com",
-    amount: 5000 * 100, // amount in kobo
-    currency: "ZAR", // or NGN, USD, etc.
-    callback: function(response) {
-      alert("Payment successful! Reference: " + response.reference);
-    },
-    onClose: function() {
-      alert("Transaction was not completed.");
-    }
-  });
-
-  handler.openIframe();
-};
-
-  const handleNormalPayment = async () => {
-    setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      finalizeOrder(checkoutData.paymentMethod, null);
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Payment failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-const finalizeOrder = async (method, reference) => {
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) {
-      alert("You must be logged in.");
+    if (!window.PaystackPop) {
+      alert("Paystack failed to load. Refresh.");
       return;
     }
 
-    const authHeader = "Basic " + btoa(`${user.email}:${user.password}`);
+    setLoading(true);
 
-    const res = await fetch(`http://${BaseAPI}:3000/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader, // ✅ Needed because of global basicAuth
+    const handler = window.PaystackPop.setup({
+      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+      email: formData.email,
+      amount: Math.round(checkoutData.summary.total * 100),
+      currency: "ZAR",
+      ref: `ORDER_${Date.now()}`,
+      callback: (response) => {
+        setLoading(false);
+        finalizeOrder("paystack", response.reference);
       },
-      body: JSON.stringify({
-        email: user.email,
-        paymentMethod: method,
-        customer: formData,
-      }),
+      onClose: () => {
+        alert("Transaction not completed.");
+        setLoading(false);
+      },
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Checkout failed");
+    handler.openIframe();
+  };
+
+  const handleNormalPayment = async () => {
+    setLoading(true);
+    await new Promise((res) => setTimeout(res, 1500));
+    finalizeOrder(checkoutData.paymentMethod, null);
+    setLoading(false);
+  };
+
+  const finalizeOrder = async (method, reference) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("Please log in first.");
+        navigate("/login");
+        return;
+      }
+
+      const headers = await getAuthHeaders();
+
+      const response = await apiRequest("/checkout", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          email: formData.email,
+          paymentMethod: method,
+          paymentReference: reference,
+          customer: formData,
+          items: checkoutData.items,
+          total: checkoutData.summary.total,
+        }),
+      });
+
+      const data = await response.json();
+
+      localStorage.removeItem("cart");
+      localStorage.removeItem("checkoutData");
+
+      navigate("/order-success", { state: { order: data.order } });
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Order failed: " + err.message);
     }
+  };
 
-    const data = await res.json();
-    console.log("Order saved:", data);
-
-    localStorage.removeItem("cart");
-    localStorage.removeItem("checkoutData");
-
-    navigate("/order-success", { state: { order: data.order } });
-  } catch (error) {
-    console.error("Finalize order error:", error);
-    alert(error.message);
-  }
-};
-
-
-
-  const getPaymentMethodName = (method) => {
-    const methods = {
+  const getPaymentMethodName = (m) => {
+    const map = {
       paypal: "PayPal",
       mastercard: "Mastercard",
       visa: "Visa",
       paystack: "Paystack",
       bitcoin: "Bitcoin",
-      applepay: "Apple Pay"
+      applepay: "Apple Pay",
     };
-    return methods[method] || method;
+    return map[m] || m;
   };
 
-  if (!checkoutData) return <div className="loading">Loading...</div>;
+  if (!checkoutData) return <div className="loading">Loading…</div>;
 
   return (
     <div className="checkout-container">
@@ -166,9 +169,8 @@ const finalizeOrder = async (method, reference) => {
           <form onSubmit={handleSubmit}>
             <h2>Checkout</h2>
 
-            {/* Contact */}
             <div className="checkout-section">
-              <h3>Contact Information</h3>
+              <h3>Contact Info</h3>
               <input
                 type="email"
                 name="email"
@@ -179,75 +181,30 @@ const finalizeOrder = async (method, reference) => {
               />
             </div>
 
-            {/* Address */}
             <div className="checkout-section">
               <h3>Shipping Address</h3>
-              <input
-                type="text"
-                name="firstName"
-                placeholder="First name"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="text"
-                name="lastName"
-                placeholder="Last name"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="text"
-                name="address"
-                placeholder="Address"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="text"
-                name="city"
-                placeholder="City"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="text"
-                name="postalCode"
-                placeholder="Postal code"
-                value={formData.postalCode}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Phone number"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-              />
+              <input type="text" name="firstName" placeholder="First name" value={formData.firstName} onChange={handleInputChange} />
+              <input type="text" name="lastName" placeholder="Last name" value={formData.lastName} onChange={handleInputChange} />
+              <input type="text" name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} />
+              <input type="text" name="city" placeholder="City" value={formData.city} onChange={handleInputChange} />
+              <input type="text" name="postalCode" placeholder="Postal code" value={formData.postalCode} onChange={handleInputChange} />
+              <input type="tel" name="phone" placeholder="Phone number" value={formData.phone} onChange={handleInputChange} />
             </div>
 
-            {/* Payment Info */}
             <div className="checkout-section">
               <h3>Payment Method</h3>
               <p>Selected: {getPaymentMethodName(checkoutData.paymentMethod)}</p>
               {checkoutData.paymentMethod === "paystack" && (
-                <p>You’ll be prompted with Paystack’s secure popup.</p>
+                <p>You’ll be prompted with Paystack popup.</p>
               )}
             </div>
 
             <button type="submit" className="place-order-btn" disabled={loading}>
-              {loading ? "Processing..." : `Pay R${checkoutData.summary.total.toFixed(2)}`}
+              {loading ? "Processing…" : `Pay R${checkoutData.summary.total.toFixed(2)}`}
             </button>
           </form>
         </div>
 
-        {/* Sidebar */}
         <div className="checkout-right">
           <div className="order-summary">
             <h3>Order Summary</h3>

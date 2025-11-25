@@ -46,6 +46,87 @@ function BookDetail() {
     fetchBook();
   }, [id, navigate]);
 
+  // ADD TO CART FUNCTION - This was missing!
+  const addToCart = async (book) => {
+    try {
+      const headers = await getAuthHeaders().catch(() => null);
+      if (!headers) {
+        alert("Please log in to add items to cart");
+        navigate("/login");
+        return;
+      }
+
+      // First, check if item already exists in cart
+      const cartResponse = await fetch(`${API_CONFIG.BASE_URL}/cart`, { headers });
+      
+      if (cartResponse.status === 401) {
+        handleAuthError(navigate);
+        return;
+      }
+
+      let currentCart = [];
+      if (cartResponse.ok) {
+        currentCart = await cartResponse.json();
+      }
+
+      // Check if book already in cart
+      const existingItem = currentCart.find(item =>
+        item.productId === (book._id || book.book_id) || item.title === book.title
+      );
+
+      if (existingItem) {
+        // Update quantity
+        const updateResponse = await fetch(`${API_CONFIG.BASE_URL}/cart/${existingItem._id}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({
+            quantity: (existingItem.quantity || 1) + 1
+          }),
+        });
+
+        if (updateResponse.status === 401) {
+          handleAuthError(navigate);
+          return;
+        }
+
+        if (!updateResponse.ok) {
+          throw new Error("Failed to update cart item");
+        }
+
+        alert(`${book.title} quantity updated in cart!`);
+      } else {
+        // Add new item
+        const addResponse = await fetch(`${API_CONFIG.BASE_URL}/cart`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            title: book.title,
+            price: book.price || 0,
+            author: book.author || "Unknown",
+            description: book.description || "",
+            quantity: 1,
+            productId: book._id || book.book_id
+          }),
+        });
+
+        if (addResponse.status === 401) {
+          handleAuthError(navigate);
+          return;
+        }
+
+        if (!addResponse.ok) {
+          const errorData = await addResponse.json();
+          throw new Error(errorData.error || "Failed to add item to cart");
+        }
+
+        alert(`${book.title} added to cart!`);
+      }
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+      alert(`Error adding item to cart: ${err.message}`);
+    }
+  };
+
   const getBookImage = (book) => {
     if (book.displayImage) {
       console.log(`📷 Using displayImage for: ${book.title}`);

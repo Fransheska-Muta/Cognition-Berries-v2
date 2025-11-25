@@ -266,17 +266,15 @@ const CourseDetail = () => {
                 />
               </div>
               <div className="course-card-content">
-                <div className="price-section">
-                  {course.price === 0 || course.price === "0" ? (
+                <div className="price-section">(
                     <span className="price free">Free</span>
                   ) : (
                     <div className="price-wrapper">
-                      <span className="price">{course.price}</span>
                       {course.originalPrice && (
                         <span className="original-price">{course.originalPrice}</span>
                       )}
                     </div>
-                  )}
+                  )
                 </div>
                 
                 {isEnrolled ? (
