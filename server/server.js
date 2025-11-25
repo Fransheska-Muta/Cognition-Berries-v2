@@ -409,7 +409,6 @@ app.post("/users", async (req, res) => {
 // ----------------------- Public Courses (browseable) -----------------------
 // Make courses browseable without requiring Firebase auth so the app can show available courses.
 // This also ensures the DB connection is established and logs collection diagnostics to help troubleshooting.
-<<<<<<< HEAD
 app.get("/courses", requireAuth,async (req, res) => {
   try {
     if (!db) {
@@ -513,7 +512,7 @@ app.get("/courses", requireAuth,async (req, res) => {
       error: "Failed to fetch courses", 
       details: err.message 
     });
-=======
+  }})
 // Replace the GET /courses endpoint in server.js with this:
 
 
@@ -546,7 +545,6 @@ app.get("/api/images/:imageId", async (req, res) => {
   } catch (err) {
     console.error("❌ Image retrieval error:", err);
     res.status(500).json({ error: "Failed to retrieve image" });
->>>>>>> 732ba949ab3c45db0c17a4150721fbc4b066281d
   }
 });
 // ----------------------- Protected routes (requireAuth) -----------------------
@@ -562,7 +560,6 @@ app.get("/reviews", requireAuth, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 app.get("/material-books", requireAuth, async (req, res) => {
   try {
     if (!db) {
@@ -672,13 +669,11 @@ app.get("/material-books", requireAuth, async (req, res) => {
     });
   }
 });
-=======
 // Replace the /courses GET endpoint in server.js (around line 473)
 
 // This fixes the aggregation error AND adds placeholder images
 
 
->>>>>>> 732ba949ab3c45db0c17a4150721fbc4b066281d
 
 // Public forum posts (read-only)
 app.get("/forum-posts", async (req, res) => {
@@ -2752,11 +2747,8 @@ app.get("/material-books/:id", async (req, res) => {
             imageData: 0
           }
         }
-<<<<<<< HEAD
-      ])
-=======
+      
       ],{ allowDiskUse: true })
->>>>>>> 732ba949ab3c45db0c17a4150721fbc4b066281d
       .toArray();
 
     if (!book || book.length === 0) {
