@@ -225,14 +225,11 @@
   transition: transform 0.2s ease;
 }
 
-.cart-icon-wrapper:hover {
-  transform: scale(1.1);
-}
 
 .cart-icon {
-  font-size: 24px;
+  font-size: 10px;
   color: #333;
-  transition: color 0.2s ease;
+  /* transition: color 0.2s ease; */
 }
 
 .cart-icon:hover {

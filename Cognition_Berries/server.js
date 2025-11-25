@@ -326,71 +326,40 @@ app.post("/users", async (req, res) => {
 // ----------------------- Public Courses (browseable) -----------------------
 // Make courses browseable without requiring Firebase auth so the app can show available courses.
 // This also ensures the DB connection is established and logs collection diagnostics to help troubleshooting.
-app.get("/courses", requireAuth, async (req, res) => {
+// Replace the GET /courses endpoint in server.js with this:
+
+
+
+// Also add a dedicated endpoint to fetch individual images if needed
+app.get("/api/images/:imageId", async (req, res) => {
   try {
-    if (!db) {
-      await connectToMongo();
-    }
-
-    console.log("📚 Fetching courses with images...");
-
-    const courses = await db.collection("material-courses")
-      .aggregate([
-        {
-          $addFields: {
-            imageObjectId: {
-              $cond: {
-                if: {
-                  $and: [
-                    { $ne: ["$image", null] },
-                    { $ne: ["$image", ""] },
-                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
-                  ]
-                },
-                then: { $toObjectId: "$image" },
-                else: null
-              }
-            }
-          }
-        },
-        {
-          $lookup: {
-            from: "images",
-            localField: "imageObjectId",
-            foreignField: "_id",
-            as: "imageData"
-          }
-        },
-        {
-          $unwind: {
-            path: "$imageData",
-            preserveNullAndEmptyArrays: true
-          }
-        },
-        {
-          $project: {
-            imageObjectId: 0
-          }
-        }
-      ])
-      .toArray();
-
-    console.log(`✅ Fetched ${courses.length} courses`);
+    const { imageId } = req.params;
     
-    // Log image data availability for debugging
-    courses.forEach(course => {
-      const hasImageData = !!(course.imageData && course.imageData.data);
-      const hasDirectImage = !!course.image;
-      console.log(`Course: ${course.title}, hasImageData: ${hasImageData}, hasDirectImage: ${hasDirectImage}`);
+    if (!ObjectId.isValid(imageId)) {
+      return res.status(400).json({ error: "Invalid image ID" });
+    }
+    
+    const image = await db.collection("images").findOne({ 
+      _id: new ObjectId(imageId) 
     });
-
-    res.json(courses);
+    
+    if (!image) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+    
+    // Return the image data directly
+    res.json({
+      id: image._id,
+      data: image.data,
+      mimeType: image.mimeType,
+      filename: image.filename
+    });
+    
   } catch (err) {
-    console.error("❌ Failed to fetch courses:", err);
-    res.status(500).json({ error: "Failed to fetch courses", details: err.message });
+    console.error("❌ Image retrieval error:", err);
+    res.status(500).json({ error: "Failed to retrieve image" });
   }
 });
-
 // ----------------------- Protected routes (requireAuth) -----------------------
 
 // All other routes below require authentication (and admin where needed)
@@ -404,15 +373,11 @@ app.get("/reviews", requireAuth, async (req, res) => {
   }
 });
 
-app.get("/material-books", requireAuth, async (req, res) => {
-  try {
-    const books = await db.collection("material-books").find().toArray();
-    res.json(books);
-  } catch (err) {
-    console.error("Failed to fetch books:", err);
-    res.status(500).json({ error: "Failed to fetch books" });
-  }
-});
+// Replace the /courses GET endpoint in server.js (around line 473)
+
+// This fixes the aggregation error AND adds placeholder images
+
+
 
 // Public forum posts (read-only)
 app.get("/forum-posts", async (req, res) => {
@@ -2243,7 +2208,54 @@ async function restoreScheduledReminders() {
 
 module.exports = { restoreScheduledReminders };
 
+
 // ----------------------- Material Books Management -----------------------
+
+// Add this GET endpoint for all books - place it before the /material-books/:id endpoint
+app.get("/material-books", async (req, res) => {
+  console.log("📚 Fetching books and Images..............");
+  try {
+    // Simple query without aggregation first
+    const books = await db.collection("material-books").find({}).toArray();
+    
+    // Then fetch images separately for books that have image references
+    const booksWithImages = await Promise.all(
+      books.map(async (book) => {
+        if (book.image && ObjectId.isValid(book.image)) {
+          try {
+            const imageDoc = await db.collection("images").findOne({ 
+              _id: new ObjectId(book.image) 
+            });
+            return {
+              ...book,
+              displayImage: imageDoc ? imageDoc.data : null,
+              hasImage: !!imageDoc
+            };
+          } catch (imageErr) {
+            console.warn(`⚠️ Could not fetch image for book ${book._id}`);
+            return {
+              ...book,
+              displayImage: null,
+              hasImage: false
+            };
+          }
+        }
+        return {
+          ...book,
+          displayImage: null,
+          hasImage: false
+        };
+      })
+    );
+
+    console.log(`✅ Found ${booksWithImages.length} books`);
+    res.json(booksWithImages);
+  } catch (err) {
+    console.error("❌ Failed to fetch books:", err);
+    res.status(500).json({ error: "Failed to fetch books" });
+  }
+});
+
 app.post("/material-books", requireAuth, requireAdmin, async (req, res) => {
   try {
     const book = {
@@ -2261,16 +2273,81 @@ app.post("/material-books", requireAuth, requireAdmin, async (req, res) => {
 
 app.get("/material-books/:id", async (req, res) => {
   try {
-    const book = await db.collection("material-books").findOne({
-      $or: [
-        { book_id: req.params.id },
-        { _id: ObjectId.isValid(req.params.id) ? new ObjectId(req.params.id) : null }
-      ]
-    });
-    book ? res.json(book) : res.status(404).json({ message: "Book not found" });
+    const bookId = req.params.id;
+    
+    const book = await db.collection("material-books")
+      .aggregate([
+        // Match the specific book
+        {
+          $match: {
+            $or: [
+              { book_id: bookId },
+              { _id: ObjectId.isValid(bookId) ? new ObjectId(bookId) : null }
+            ]
+          }
+        },
+        // Convert image string to ObjectId
+        {
+          $addFields: {
+            imageObjectId: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$image", null] },
+                    { $ne: ["$image", ""] },
+                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
+                  ]
+                },
+                then: { $toObjectId: "$image" },
+                else: null
+              }
+            }
+          }
+        },
+        // Lookup image
+        {
+          $lookup: {
+            from: "images",
+            localField: "imageObjectId",
+            foreignField: "_id",
+            as: "imageData"
+          }
+        },
+        {
+          $unwind: {
+            path: "$imageData",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        // Add displayImage
+        {
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: { $ne: ["$imageData.data", null] },
+                then: "$imageData.data",
+                else: null
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            imageObjectId: 0,
+            imageData: 0
+          }
+        }
+      ],{ allowDiskUse: true })
+      .toArray();
+
+    if (!book || book.length === 0) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    res.json(book[0]);
   } catch (err) {
-    console.error("Failed to get book:", err);
-    res.status(500).json({ error: "Failed to get book" });
+    console.error("Failed to fetch book:", err);
+    res.status(500).json({ error: "Failed to fetch book" });
   }
 });
 

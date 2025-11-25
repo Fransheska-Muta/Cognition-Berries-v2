@@ -76,6 +76,7 @@
 }
 
 .footer-contact p {
+  text-align: left;
   margin: 0;
   font-size: 0.95rem;
   color: #94a3b8;
@@ -169,6 +170,8 @@
 
 /* Right Section - Links */
 .footer-links {
+  margin-top: 70px;
+  /* border:1px solid red; */
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 3rem;

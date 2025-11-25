@@ -39,56 +39,72 @@ function Courses() {
         }
 
         const data = await response.json();
-        console.log("✅ Raw courses data:", data);
+        console.log("✅ Raw courses data received:", data.length, "courses");
 
-        // Process courses to handle image data properly
-        const processedCourses = Array.isArray(data) ? data.map(course => {
-          console.log(`Processing course ${course.title}:`, {
-            hasImageData: !!course.imageData,
-            imageDataType: course.imageData?.data ? 'has data' : 'no data',
-            hasDirectImage: !!course.image,
-            imageValue: course.image
-          });
-
-          // Priority: imageData.data (base64 from images collection) > direct image field
-          let displayImage = null;
-
+        // DIAGNOSTIC: Log detailed image info for each course
+        console.group("🔍 Course Image Diagnostic");
+        data.forEach((course, index) => {
+          console.log(`Course ${index + 1}: ${course.title}`);
+          console.log("  - image field:", course.image);
+          console.log("  - displayImage field:", course.displayImage);
+          console.log("  - imageData present:", !!course.imageData);
+          console.log("  - imageData.data present:", !!(course.imageData && course.imageData.data));
           if (course.imageData && course.imageData.data) {
-            // Use the base64 data from the images collection
-            displayImage = course.imageData.data;
-            console.log(`Using imageData.data for ${course.title}`);
-          } else if (course.image) {
-            // Check if image is an ObjectId string or URL
-            if (course.image.match(/^[0-9a-fA-F]{24}$/)) {
-              // It's an ObjectId, construct API endpoint
-              displayImage = `/api/images/${course.image}`;
-              console.log(`Image is ObjectId, using API endpoint: ${displayImage}`);
-            } else if (course.image.startsWith('data:image/')) {
-              // It's already base64
-              displayImage = course.image;
-              console.log(`Image is base64 data URL`);
-            } else if (course.image.startsWith('http') || course.image.startsWith('/')) {
-              // It's a URL or path
-              displayImage = course.image;
-              console.log(`Image is URL/path: ${displayImage}`);
+            console.log("  - imageData.data length:", course.imageData.data.length);
+            console.log("  - imageData.data preview:", course.imageData.data.substring(0, 50) + "...");
+          }
+          console.log("---");
+        });
+        console.groupEnd();
+
+        // Process courses with enhanced fallback logic
+        const processedCourses = Array.isArray(data) ? data.map((course, index) => {
+          let finalDisplayImage = null;
+
+          // Priority 1: Use displayImage from server aggregation
+          if (course.displayImage && course.displayImage.startsWith('data:image/')) {
+            finalDisplayImage = course.displayImage;
+            console.log(`✅ Course ${index + 1} (${course.title}): Using server displayImage`);
+          }
+          // Priority 2: Use imageData.data from aggregation
+          else if (course.imageData && course.imageData.data) {
+            if (course.imageData.data.startsWith('data:image/')) {
+              finalDisplayImage = course.imageData.data;
+              console.log(`✅ Course ${index + 1} (${course.title}): Using imageData.data`);
+            } else {
+              console.warn(`⚠️ Course ${index + 1} (${course.title}): imageData.data exists but doesn't start with 'data:image/'`);
             }
+          }
+          // Priority 3: Check if image field is a complete data URL
+          else if (course.image && course.image.startsWith('data:image/')) {
+            finalDisplayImage = course.image;
+            console.log(`✅ Course ${index + 1} (${course.title}): Using direct image field as data URL`);
+          }
+          // Priority 4: Construct API endpoint if image is ObjectId
+          else if (course.image && course.image.match(/^[0-9a-fA-F]{24}$/)) {
+            finalDisplayImage = `/api/images/${course.image}`;
+            console.log(`ℹ️ Course ${index + 1} (${course.title}): Using API endpoint (${finalDisplayImage})`);
+          }
+          // Priority 5: Use external URL if provided
+          else if (course.image && (course.image.startsWith('http://') || course.image.startsWith('https://'))) {
+            finalDisplayImage = course.image;
+            console.log(`✅ Course ${index + 1} (${course.title}): Using external URL`);
+          }
+          else {
+            console.warn(`❌ Course ${index + 1} (${course.title}): No valid image found`);
           }
 
           return {
             ...course,
-            displayImage
+            displayImage: finalDisplayImage
           };
         }) : [];
 
-        console.log("✅ Processed courses with images:", processedCourses.map(c => ({
-          title: c.title,
-          hasDisplayImage: !!c.displayImage,
-          displayImageType: c.displayImage ? (
-            c.displayImage.startsWith('data:') ? 'base64' :
-              c.displayImage.startsWith('/api/') ? 'api-endpoint' :
-                'url'
-          ) : 'none'
-        })));
+        console.log("📊 Processing complete. Courses with images:", 
+          processedCourses.filter(c => c.displayImage).length, 
+          "of", 
+          processedCourses.length
+        );
 
         setCourses(processedCourses);
         setError("");
@@ -105,20 +121,18 @@ function Courses() {
   }, [currentUser]);
 
   const handleEnroll = async (course) => {
-    // If not signed in, redirect to signup
     if (!currentUser) {
       window.location.href = '/signup';
       return;
     }
 
-    // prevent double-click
     if (enrollingIds.includes(course._id)) return;
+    
     setEnrollingIds((s) => [...s, course._id]);
     try {
       const res = await apiRequest(`/enroll/${course._id}`, { method: 'POST' });
       const json = await res.json();
       console.log('Enroll response', json);
-      // show a simple confirmation — in a real app use toast
       alert(json.message || 'Enrolled successfully');
     } catch (err) {
       console.error('Enroll error', err);
@@ -133,30 +147,40 @@ function Courses() {
     return course.category === selectedCategory;
   });
 
-  // Helper function to get image source with proper error handling
+  // Helper function to get image source
   const getImageSrc = (course) => {
+    const placeholderImage = "https://via.placeholder.com/400x250/667eea/ffffff?text=Finance+Course";
+    
     if (!course.displayImage) {
-      return "https://via.placeholder.com/400x250?text=Finance+Course";
+      return placeholderImage;
     }
 
-    // If it's already a data URL (base64), return as-is
+    // If it's a complete data URL (base64), return as-is
     if (course.displayImage.startsWith('data:image/')) {
       return course.displayImage;
     }
 
-    // If it's an API endpoint path, prepend the base URL
-    if (course.displayImage.startsWith('/api/')) {
-      const baseUrl = import.meta.env.VITE_BASE_API || 'localhost:3000';
-      return `http://${baseUrl}${course.displayImage}`;
-    }
-
-    // If it's a full URL, return as-is
-    if (course.displayImage.startsWith('http')) {
+    // If it's a full external URL, return as-is
+    if (course.displayImage.startsWith('http://') || course.displayImage.startsWith('https://')) {
       return course.displayImage;
     }
 
+    // If it's an API path, construct the full URL
+    if (course.displayImage.startsWith('/api/images/')) {
+      // Note: This won't work directly in <img> tag since the API returns JSON
+      // We need the base64 data to be in the displayImage field already
+      console.warn(`⚠️ Course ${course.title}: API path detected, but base64 data not loaded. Using placeholder.`);
+      return placeholderImage;
+    }
+
     // Fallback
-    return "https://via.placeholder.com/400x250?text=Finance+Course";
+    return placeholderImage;
+  };
+
+  // Image error handler
+  const handleImageError = (e, courseName) => {
+    console.error(`❌ Failed to load image for ${courseName}`);
+    e.target.src = "https://via.placeholder.com/400x250/667eea/ffffff?text=Finance+Course";
   };
 
   if (authLoading) {
@@ -239,10 +263,7 @@ function Courses() {
                         src={getImageSrc(course)}
                         alt={course.title}
                         className="course-card-image"
-                        onError={(e) => {
-                          console.error(`Failed to load image for ${course.title}:`, e.target.src);
-                          e.target.src = "https://via.placeholder.com/400x250?text=Finance+Course";
-                        }}
+                        onError={(e) => handleImageError(e, course.title)}
                         loading="lazy"
                       />
                       {course.badge && (
@@ -259,10 +280,14 @@ function Courses() {
                       <div className="course-card-footer">
                         <div className="course-card-meta">
                           <div className="course-card-date">
-                            {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date N/A'}
+                            {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', { 
+                              day: 'numeric', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            }) : 'Date N/A'}
                           </div>
                           <div className="course-card-price">
-                            {course.price || '0'}
+                            R{course.price || '0'}
                           </div>
                         </div>
                         <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
@@ -271,7 +296,8 @@ function Courses() {
                       </div>
                       <div className="course-card-actions">
                         {(() => {
-                          const canEnroll = course.enrollable || course.isFree || course.price === 0 || course.price === '0' || course.price == null;
+                          const canEnroll = course.enrollable || course.isFree || 
+                                           course.price === 0 || course.price === '0' || course.price == null;
                           if (canEnroll) {
                             if (enrollingIds.includes(course._id)) {
                               return <button className="enroll-btn" disabled>Enrolling...</button>;
@@ -279,7 +305,17 @@ function Courses() {
                             if (!currentUser) {
                               return <Link to="/signup" className="enroll-btn">Sign up to Enroll</Link>;
                             }
-                            return <button onClick={() => handleEnroll(course)} className="enroll-btn">Enroll</button>;
+                            return (
+                              <button 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleEnroll(course);
+                                }} 
+                                className="enroll-btn"
+                              >
+                                Enroll
+                              </button>
+                            );
                           }
                           return <Link to={`/course/${course._id}`} className="view-btn">View Details</Link>;
                         })()}
@@ -298,9 +334,7 @@ function Courses() {
                       src={getImageSrc(course)}
                       alt={course.title}
                       className="course-list-image"
-                      onError={(e) => {
-                        e.target.src = "https://via.placeholder.com/120x80?text=Course";
-                      }}
+                      onError={(e) => handleImageError(e, course.title)}
                       loading="lazy"
                     />
                     <div className="course-list-content">
@@ -311,16 +345,21 @@ function Courses() {
                     </div>
                     <div className="course-list-meta">
                       <div className="course-card-date">
-                        {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date N/A'}
+                        {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', { 
+                          day: 'numeric', 
+                          month: 'short', 
+                          year: 'numeric' 
+                        }) : 'Date N/A'}
                       </div>
-                      <div className="course-card-price">{course.price || '0'}</div>
+                      <div className="course-card-price">R{course.price || '0'}</div>
                       <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
                         {course.published ? 'Published' : 'Unpublished'}
                       </div>
                     </div>
                     <div className="course-list-actions">
                       {(() => {
-                        const canEnroll = course.enrollable || course.isFree || course.price === 0 || course.price === '0' || course.price == null;
+                        const canEnroll = course.enrollable || course.isFree || 
+                                         course.price === 0 || course.price === '0' || course.price == null;
                         if (canEnroll) {
                           if (enrollingIds.includes(course._id)) {
                             return <button className="enroll-btn" disabled>Enrolling...</button>;
@@ -328,7 +367,17 @@ function Courses() {
                           if (!currentUser) {
                             return <Link to="/signup" className="enroll-btn">Sign up to Enroll</Link>;
                           }
-                          return <button onClick={() => handleEnroll(course)} className="enroll-btn">Enroll</button>;
+                          return (
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleEnroll(course);
+                              }} 
+                              className="enroll-btn"
+                            >
+                              Enroll
+                            </button>
+                          );
                         }
                         return <Link to={`/course/${course._id}`} className="view-btn">View Details</Link>;
                       })()}

@@ -8,7 +8,7 @@ function FeedbackCarousel() {
   const [reviews, setReviews] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); 
+  const [error, setError] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const intervalRef = useRef(null);
 
@@ -18,37 +18,48 @@ function FeedbackCarousel() {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        const response = await publicApiRequest("/reviews", { method: "GET" });
+        const response = await publicApiRequest("/review", { method: "GET" });
         if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
         const data = await response.json();
-        
+
         // Debug: log the data structure
         console.log("Reviews data:", data);
-        
+
         // Flatten nested reviews structure
-        let allReviews = [];
-        if (Array.isArray(data)) {
-          data.forEach(course => {
-            if (course.reviews && Array.isArray(course.reviews)) {
-              // Add course name to each review
-              const courseReviews = course.reviews.map(review => ({
-                ...review,
-                courseName: course.courseName || 'Unknown Course'
-              }));
-              allReviews = [...allReviews, ...courseReviews];
-            }
-          });
-        }
-        
+        let allReviews = data.map(review => ({
+          ...review,
+          courseName: review.courseName || "Unknown Course"
+        }));
+
         console.log("Flattened reviews:", allReviews);
-        
+
+        console.log("Flattened reviews:", allReviews);
+        if (allReviews.length > 0) {
+          console.log("Sample review object:", allReviews[0]);
+        }
+
         // Filter out reviews with no content
         const validReviews = allReviews.filter(review => {
-          const hasContent = (review.review || review.comment || review.title);
-          const hasName = (review.studentName || review.name);
+          const hasContent =
+            review.review ||
+            review.comment ||
+            review.title ||
+            review.text ||
+            review.content ||
+            review.message ||
+            review.reviewText;
+
+          const hasName =
+            review.studentName ||
+            review.name ||
+            review.username ||
+            review.user ||
+            review.student;
+
           return hasContent && hasName;
         });
-        
+
+
         setReviews(validReviews);
         setError(null);
       } catch (err) {
@@ -116,11 +127,10 @@ function FeedbackCarousel() {
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          className={`w-5 h-5 ${
-            i < rating
-              ? "fill-amber-400 text-amber-400"
-              : "fill-gray-200 text-gray-200"
-          }`}
+          className={`w-5 h-5 ${i < rating
+            ? "fill-amber-400 text-amber-400"
+            : "fill-gray-200 text-gray-200"
+            }`}
         />
       ))}
     </div>
@@ -136,7 +146,7 @@ function FeedbackCarousel() {
         { review: reviews[currentIndex], position: 0 }
       ];
     }
-    
+
     const cards = [];
     for (let i = -1; i <= 1; i++) {
       let idx = currentIndex + i;
