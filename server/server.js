@@ -19,7 +19,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const Base_API = "localhost";
+const Base_API = process.env.VITE_BASE_API || "localhost";
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
 const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
 
@@ -3580,7 +3580,7 @@ app.use((err, req, res, next) => {
 // Replace unconditional listen with conditional start and export app
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running at http://${Base_API}:${PORT}`);
   });
 }
 
