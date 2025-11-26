@@ -114,9 +114,9 @@ export default function PhoneLogin() {
   };
 
   const bgImages = [
-    '../../../public/Ancient-Torii-Gate-Amidst-Greenery.png',
-    '../../../public/SereneCountrysideLandscape.png',
-    '../../../public/Vintage-Compass-on-Map.png'
+     '/Ancient-Torii-Gate-Amidst-Greenery.png',
+  '/SereneCountrysideLandscape.png',
+  '/Vintage-Compass-on-Map.png'
   ];
 
   return (
