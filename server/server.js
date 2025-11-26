@@ -3580,7 +3580,7 @@ app.use((err, req, res, next) => {
 // Replace unconditional listen with conditional start and export app
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Server running at http://${Base_API}:${PORT}`);
+    console.log(`Server running at http://52.44.223.219:${PORT}`);
   });
 }
 
