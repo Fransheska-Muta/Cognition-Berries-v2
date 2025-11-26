@@ -75,7 +75,7 @@ app.use(cors({
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://52.44.223.219:3000"],
+    origin: ["http://localhost:5173", "http://52.44.223.219:3000","http://cognition-berries.s3-website-us-east-1.amazonaws.com"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
