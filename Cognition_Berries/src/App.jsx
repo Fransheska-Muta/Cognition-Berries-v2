@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate, Outlet } from "react-router-dom"
+import { Route, Routes, Navigate } from "react-router-dom"
 import Navbar from './components/Navbar/Navbar'
 import SignUp from './pages/AuthPages/SignUp'
 import Login from './pages/AuthPages/Login'
@@ -18,13 +18,17 @@ import SettingsPage from "./pages/SettingsPage/Settings"
 import CourseDetail from './pages/CourseDetail/CourseDetail';
 import CourseLearning from './pages/CourseLearning/CourseLearning';
 import PhoneLogin from "./pages/AuthPages/PhoneLogin"
-import { isAuthenticated } from "./utils/auth"
+import { useAuth } from "./Context/AuthContext" // Import useAuth hook
 import BookDetail from "./pages/Book Details/BookDetails"
 import Blog from "./pages/BlogPage/BlogPage"
 import ForumHome from "./pages/ComminityForum/ForumHome"
 
+// Updated ProtectedRoute to use AuthContext
 const ProtectedRoute = ({ children }) => {
-  return isAuthenticated() ? children : <Navigate to='/login' replace />;
+  const { currentUser } = useAuth();
+  
+  // Redirect to login if not authenticated
+  return currentUser ? children : <Navigate to='/login' replace />;
 }
 
 function App() {
