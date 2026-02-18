@@ -92,8 +92,8 @@ const HomePage = () => {
     }
 
     if (course.displayImage.startsWith('/api/')) {
-      const baseUrl = import.meta.env.VITE_BASE_API || 'localhost:3000';
-      return `http://${baseUrl}${course.displayImage}`;
+      const baseUrl = import.meta.env.VITE_BASE_API || 'http://localhost:3000';
+      return `${baseUrl}${course.displayImage}`;
     }
 
     if (course.displayImage.startsWith('http')) {
@@ -168,14 +168,16 @@ const HomePage = () => {
               {courses.slice(0, 3).map((course) => (
                 <div className="course" key={course._id}>
                   <img
-                    src={getImageSrc(course)}  // ✅ use helper instead of raw course.image
+                    src={getImageSrc(course)}  // use helper instead of raw course.image
                     alt={course.title || "Course"}
                   />
                   <div className="course-content">
                     <h3>{course.title}</h3>
                     <p>{course.description || "No description available."}</p>
                     <div className="prce-btn">
-                      <p>Free</p>
+                      <h3>
+                      R {course.price || '0'}
+                      </h3>
                       <Link to={`/course/${course._id}`} className="view-course-btn">View Course</Link>
                     </div>
                   </div>

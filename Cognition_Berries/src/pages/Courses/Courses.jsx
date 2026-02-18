@@ -14,6 +14,7 @@ function Courses() {
   const [selectedCategory, setSelectedCategory] = useState("All Category");
   const [viewMode, setViewMode] = useState("grid");
   const [enrollingIds, setEnrollingIds] = useState([]);
+  const [addingToCartIds, setAddingToCartIds] = useState([]);
 
   const categories = [
     "All Category",
@@ -100,9 +101,9 @@ function Courses() {
           };
         }) : [];
 
-        console.log("📊 Processing complete. Courses with images:", 
-          processedCourses.filter(c => c.displayImage).length, 
-          "of", 
+        console.log("📊 Processing complete. Courses with images:",
+          processedCourses.filter(c => c.displayImage).length,
+          "of",
           processedCourses.length
         );
 
@@ -127,7 +128,7 @@ function Courses() {
     }
 
     if (enrollingIds.includes(course._id)) return;
-    
+
     setEnrollingIds((s) => [...s, course._id]);
     try {
       const res = await apiRequest(`/enroll/${course._id}`, { method: 'POST' });
@@ -142,6 +143,45 @@ function Courses() {
     }
   };
 
+  const handleAddToCart = async (course) => {
+    if (!currentUser) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (addingToCartIds.includes(course._id)) return;
+
+    setAddingToCartIds((s) => [...s, course._id]);
+    try {
+      const res = await apiRequest("/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: course._id,
+          title: course.title,
+          price: course.price,
+          author: course.author || "Unknown",
+          description: course.description || "",
+          quantity: 1,
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(json.error || json.message || `Failed to add to cart (${res.status})`);
+      }
+
+      alert("Added to cart");
+    } catch (err) {
+      console.error("Add to cart error", err);
+      alert("Failed to add to cart: " + (err.message || "unknown"));
+    } finally {
+      setAddingToCartIds((s) => s.filter((id) => id !== course._id));
+    }
+  };
+
+
   const filteredCourses = courses.filter((course) => {
     if (selectedCategory === "All Category") return true;
     return course.category === selectedCategory;
@@ -150,7 +190,7 @@ function Courses() {
   // Helper function to get image source
   const getImageSrc = (course) => {
     const placeholderImage = "https://via.placeholder.com/400x250/667eea/ffffff?text=Finance+Course";
-    
+
     if (!course.displayImage) {
       return placeholderImage;
     }
@@ -285,19 +325,19 @@ function Courses() {
                               month: 'short', 
                               year: 'numeric' 
                             }) : 'Date N/A'}
-                          </div> */}
-                          {/* <div className="course-card-price">
+                          </div>  */}
+                          <div className="course-card-price">
                             R{course.price || '0'}
                           </div>
                         </div>
-                        <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
-                          {course.published ? 'Published' : 'Unpublished'} */}
-                        </div>
+                        {/* <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
+                          {course.published ? 'Published' : 'Unpublished'} 
+                        </div> */}
                       </div>
                       <div className="course-card-actions">
                         {(() => {
-                          const canEnroll = course.enrollable || course.isFree || 
-                                           course.price === 0 || course.price === '0' || course.price == null;
+                          const canEnroll = course.enrollable || course.isFree ||
+                            course.price === 0 || course.price === '0' || course.price == null;
                           if (canEnroll) {
                             if (enrollingIds.includes(course._id)) {
                               return <button className="enroll-btn" disabled>Enrolling...</button>;
@@ -306,11 +346,11 @@ function Courses() {
                               return <Link to="/signup" className="enroll-btn">Sign up to Enroll</Link>;
                             }
                             return (
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   handleEnroll(course);
-                                }} 
+                                }}
                                 className="enroll-btn"
                               >
                                 Enroll
@@ -320,6 +360,31 @@ function Courses() {
                           return <Link to={`/course/${course._id}`} className="view-btn">View Details</Link>;
                         })()}
                       </div>
+                      <br></br>
+                      <div className="course-action-buttons">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleEnroll(course);
+                          }}
+                          className="enroll-btn"
+                          disabled={enrollingIds.includes(course._id)}
+                        >
+                          {enrollingIds.includes(course._id) ? "Enrolling..." : "Enroll"}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAddToCart(course);
+                          }}
+                          className="view-btn"
+                          disabled={addingToCartIds.includes(course._id)}
+                        >
+                          {addingToCartIds.includes(course._id) ? "Adding..." : "Add to Cart"}
+                        </button>
+                      </div>
+
                     </div>
                   </div>
                 </Link>
@@ -345,21 +410,21 @@ function Courses() {
                     </div>
                     <div className="course-list-meta">
                       <div className="course-card-date">
-                        {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', { 
-                          day: 'numeric', 
-                          month: 'short', 
-                          year: 'numeric' 
+                        {course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
                         }) : 'Date N/A'}
                       </div>
-                      {/* <div className="course-card-price">R{course.price || '0'}</div> */}
+                      <div className="course-card-price">R{course.price || '0'}</div>
                       {/* <div className={`course-card-status ${course.published ? 'published' : 'unpublished'}`}>
                         {course.published ? 'Published' : 'Unpublished'}
                       </div> */}
                     </div>
                     <div className="course-list-actions">
                       {(() => {
-                        const canEnroll = course.enrollable || course.isFree || 
-                                         course.price === 0 || course.price === '0' || course.price == null;
+                        const canEnroll = course.enrollable || course.isFree ||
+                          course.price === 0 || course.price === '0' || course.price == null;
                         if (canEnroll) {
                           if (enrollingIds.includes(course._id)) {
                             return <button className="enroll-btn" disabled>Enrolling...</button>;
@@ -368,11 +433,11 @@ function Courses() {
                             return <Link to="/signup" className="enroll-btn">Sign up to Enroll</Link>;
                           }
                           return (
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 handleEnroll(course);
-                              }} 
+                              }}
                               className="enroll-btn"
                             >
                               Enroll
