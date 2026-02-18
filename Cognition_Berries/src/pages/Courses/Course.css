@@ -38,6 +38,22 @@ body {
   margin: 0;
 }
 
+.course-action-buttons{
+  /* border:1px solid red; */
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.enroll-btn, .view-btn{
+  /* border:1px solid red; */
+  width:40%;
+}
+
+.view-btn:hover{
+  background-color: #15ec20a8;
+}
+
 .new-course-btn {
   background: #1a1a1a;
   color: #fff;

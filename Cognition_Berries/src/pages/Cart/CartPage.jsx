@@ -83,9 +83,13 @@ export default function CartPage() {
   }, []);
 
   const subtotal = cart.reduce(
-    (sum, item) => sum + (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1),
-    0
-  );
+  (sum, item) =>
+    sum +
+    (parseFloat(String(item.price).replace("R", "")) || 0) *
+      (parseInt(item.quantity) || 1),
+  0
+);
+
 
   const discount = appliedCoupon?.percent && subtotal > 0
     ? (subtotal * appliedCoupon.percent) / 100

@@ -3,7 +3,7 @@ import { auth } from '../utils/firebase';
 
 // Fix API base URL format - ensure proper protocol
 const getApiBaseUrl = () => {
-  const envUrl = `http://52.44.223.219:3000`;
+  const envUrl = import.meta.env.VITE_BASE_API;
   
   // If no env URL, use default with proper protocol
   if (!envUrl) {

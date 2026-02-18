@@ -13,7 +13,7 @@ const ProfilePage = () => {
     formData.append('profilePicture', file);
 
     try {
-      const res = await fetch(`http://${Base_API}:3000/api/upload-profile`, {
+      const res = await fetch(`${Base_API}/api/upload-profile`, {
         method: 'POST',
         body: formData,
       });
