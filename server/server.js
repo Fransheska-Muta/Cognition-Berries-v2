@@ -15,6 +15,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, param, validationResult } = require("express-validator");
 
+
 dotenv.config();
 
 const app = express();
@@ -3580,7 +3581,7 @@ app.use((err, req, res, next) => {
 // Replace unconditional listen with conditional start and export app
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Server running at http://52.44.223.219:${PORT}`);
+    console.log(`Server running at http://${Base_API}:${PORT}`);
   });
 }
 
