@@ -15,6 +15,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, param, validationResult } = require("express-validator");
 
+
 dotenv.config();
 
 const app = express();
@@ -3580,7 +3581,7 @@ app.use((err, req, res, next) => {
 // Replace unconditional listen with conditional start and export app
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Server running at http://52.44.223.219:${PORT}`);
+    console.log(`Server running at http://${Base_API}:${PORT}`);
   });
 }
 
@@ -3595,16 +3596,6 @@ if (require.main === module) {
   - Always clean up test collections between tests to avoid cross-test interference.
 */
 
-/*
-  -----------------------
-  Server start & exports
-  -----------------------
-  - Only call app.listen() when module is executed directly (require.main === module).
-  - Export app + helpers (connectToMongo, getDb) via CommonJS so Mocha can require them.
-*/
-module.exports = app;
-module.exports.connectToMongo = connectToMongo;
-module.exports.getDb = () => db;
 
 // ----------------------- Helpers -----------------------
 /*
