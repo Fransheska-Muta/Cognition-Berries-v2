@@ -20,7 +20,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const Base_API = process.env.VITE_BASE_API || "localhost";
+const Base_API = process.env.VITE_BASE_API || "52.44.223.219";
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
 const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
 
@@ -60,8 +60,8 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // CORS configuration — single unified config merging env overrides + hardcoded S3 origin
 const defaultAllowedOrigins = [
-  "http://localhost:5173",
   "http://52.44.223.219:3000",
+  "http://localhost:5173",
   "http://cognition-berries.s3-website-us-east-1.amazonaws.com",
 ];
 const envOrigins = process.env.ALLOWED_ORIGINS
