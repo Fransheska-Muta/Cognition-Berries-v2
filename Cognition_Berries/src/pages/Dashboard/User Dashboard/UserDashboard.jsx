@@ -25,8 +25,19 @@ const UserDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [learningPath, setLearningPath] = useState([]);
 
   useEffect(() => {
+    const savedLearningPath = localStorage.getItem("cognitionBerriesLearningPath");
+
+if (savedLearningPath) {
+  try {
+    setLearningPath(JSON.parse(savedLearningPath));
+  } catch (error) {
+    console.error("Could not load learning path:", error);
+  }
+}
+
     async function fetchDashboardData() {
       setLoading(true);
       setError("");
@@ -279,6 +290,55 @@ const UserDashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* Personalized Learning Path */}
+{learningPath.length > 0 && (
+  <div className="udb-learning-path">
+    <div className="udb-section-header">
+      <div>
+        <h3 className="udb-section-title">
+          Your Personalized Learning Path
+        </h3>
+        <p className="udb-section-subtitle">
+          Recommended for you based on your financial goals and interests
+        </p>
+      </div>
+
+      <div className="udb-learning-path-badge">
+        🎯 Personalized
+      </div>
+    </div>
+
+    <div className="udb-learning-path-list">
+      {learningPath.map((lesson, index) => (
+        <div
+          key={index}
+          className={`udb-learning-path-item ${
+            index === 0 ? "udb-learning-path-current" : ""
+          }`}
+        >
+          <div className="udb-learning-path-number">
+            {index + 1}
+          </div>
+
+          <div className="udb-learning-path-info">
+            <h4>{lesson}</h4>
+
+            <p>
+              {index === 0
+                ? "Start here to build a strong financial foundation."
+                : "Continue building your financial knowledge."}
+            </p>
+          </div>
+
+          <div className="udb-learning-path-status">
+            {index === 0 ? "Next lesson" : "Upcoming"}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
           {/* Main Dashboard Grid */}
           <div className="udb-main-grid">
