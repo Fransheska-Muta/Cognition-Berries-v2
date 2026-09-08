@@ -11,10 +11,11 @@ const Paystack = require("paystack-api");
 const admin = require("firebase-admin");
 const path = require("path");
 const dns = require("dns");
+// Fix MongoDB SRV DNS resolution
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, param, validationResult } = require("express-validator");
-
 
 dotenv.config();
 
@@ -135,11 +136,11 @@ async function connectToMongo() {
 
   // Skip connection if already connected (for tests)
   if (db) return db;
-  
   const client = new MongoClient(process.env.MONGO_URI, {
     // Remove deprecated options
   });
   try {
+    console.log("MONGO_URI =", process.env.MONGO_URI);
     await client.connect();
     db = client.db(process.env.MONGO_DB_NAME || "cognition-berries");
     console.log("✅ Connected to MongoDB");
