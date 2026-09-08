@@ -1,0 +1,479 @@
+.onboarding-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at top left,
+      #fff4f7 0%,
+      transparent 40%
+    ),
+    #ffffff;
+
+  color: var(--neutral-dark);
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.onboarding-header {
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 40px;
+
+  background: white;
+
+  border-top: 3px solid #7135a8;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+.onboarding-logo {
+  font-size: 24px;
+  font-weight: 800;
+
+  color: var(--neutral-dark);
+}
+
+
+.onboarding-header-text {
+  color: var(--primary-red);
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.onboarding-main {
+  min-height: calc(100vh - 64px);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 50px 20px;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.onboarding-card {
+  width: 100%;
+  max-width: 780px;
+
+  background: white;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 18px;
+
+  padding: 45px;
+
+  box-shadow:
+    0 20px 50px rgba(15, 23, 42, 0.08);
+}
+
+
+/* =========================
+   INTRO
+========================= */
+
+.onboarding-intro {
+  text-align: center;
+
+  margin-bottom: 35px;
+}
+
+
+.onboarding-label {
+  display: inline-block;
+
+  margin-bottom: 12px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 1.5px;
+
+  color: var(--primary-red);
+}
+
+
+.onboarding-intro h1 {
+  font-size: 36px;
+
+  margin-bottom: 12px;
+
+  color: var(--neutral-dark);
+}
+
+
+.onboarding-intro p {
+  max-width: 580px;
+
+  margin: auto;
+
+  color: var(--neutral-gray);
+
+  line-height: 1.7;
+}
+
+
+/* =========================
+   PROGRESS
+========================= */
+
+.progress-container {
+  margin-bottom: 38px;
+}
+
+
+.progress-info {
+  display: flex;
+
+  justify-content: space-between;
+
+  margin-bottom: 9px;
+
+  font-size: 13px;
+
+  color: var(--neutral-gray);
+}
+
+
+.progress-track {
+  height: 7px;
+
+  width: 100%;
+
+  background: #edf0f4;
+
+  border-radius: 50px;
+
+  overflow: hidden;
+}
+
+
+.progress-fill {
+  height: 100%;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--primary-red),
+      #7135a8
+    );
+
+  border-radius: 50px;
+
+  transition: width 0.3s ease;
+}
+
+
+/* =========================
+   QUESTION
+========================= */
+
+.question-section h2 {
+  font-size: 25px;
+
+  margin-bottom: 8px;
+
+  color: var(--neutral-dark);
+}
+
+
+.question-subtitle {
+  margin-bottom: 25px;
+
+  color: var(--neutral-gray);
+
+  font-size: 15px;
+}
+
+
+/* =========================
+   ANSWERS
+========================= */
+
+.answer-grid {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+
+.answer-grid.multiple {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 14px;
+}
+
+
+.answer-option {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+
+  text-align: left;
+
+  padding: 18px;
+
+  background: white;
+
+  border: 1.5px solid #dfe5ec;
+
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.answer-option:hover {
+  border-color: var(--primary-red);
+
+  transform: translateY(-1px);
+}
+
+
+.answer-option.selected {
+  border-color: var(--primary-red);
+
+  background: #fff3f7;
+
+  box-shadow:
+    0 4px 12px rgba(196, 45, 106, 0.08);
+}
+
+
+/* =========================
+   RADIO / CHECK
+========================= */
+
+.answer-radio {
+  flex-shrink: 0;
+
+  width: 24px;
+  height: 24px;
+
+  border: 2px solid #cbd5e1;
+
+  border-radius: 50%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+
+  font-size: 13px;
+
+  font-weight: bold;
+}
+
+
+.answer-option.selected .answer-radio {
+  border-color: var(--primary-red);
+
+  background: var(--primary-red);
+}
+
+
+/* =========================
+   ANSWER TEXT
+========================= */
+
+.answer-content {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+.answer-content strong {
+  font-size: 15px;
+
+  color: var(--neutral-dark);
+}
+
+
+.answer-content span {
+  font-size: 13px;
+
+  line-height: 1.5;
+
+  color: var(--neutral-gray);
+}
+
+
+/* =========================
+   ACTIONS
+========================= */
+
+.onboarding-actions {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-top: 35px;
+
+  padding-top: 25px;
+
+  border-top: 1px solid #edf0f4;
+}
+
+
+.back-button {
+  padding: 12px 20px;
+
+  border: none;
+
+  background: transparent;
+
+  color: var(--neutral-gray);
+
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+.back-button:hover:not(:disabled) {
+  color: var(--primary-red);
+}
+
+
+.back-button:disabled {
+  opacity: 0;
+
+  cursor: default;
+}
+
+
+.continue-button {
+  padding: 13px 24px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--primary-red),
+      var(--primary-maroon)
+    );
+
+  color: white;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow-md);
+
+  transition: var(--transition);
+}
+
+
+.continue-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  box-shadow: var(--shadow-lg);
+}
+
+
+.continue-button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 700px) {
+
+  .onboarding-header {
+    padding: 0 20px;
+  }
+
+
+  .onboarding-header-text {
+    display: none;
+  }
+
+
+  .onboarding-main {
+    padding: 25px 15px;
+
+    align-items: flex-start;
+  }
+
+
+  .onboarding-card {
+    padding: 28px 20px;
+
+    border-radius: 14px;
+  }
+
+
+  .onboarding-intro h1 {
+    font-size: 28px;
+  }
+
+
+  .question-section h2 {
+    font-size: 22px;
+  }
+
+
+  .answer-grid.multiple {
+    grid-template-columns: 1fr;
+  }
+
+
+  .onboarding-actions {
+    gap: 10px;
+  }
+
+
+  .continue-button {
+    padding: 12px 17px;
+
+    font-size: 13px;
+  }
+
+}
