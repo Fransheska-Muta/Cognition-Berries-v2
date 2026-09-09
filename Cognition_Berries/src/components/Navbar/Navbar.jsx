@@ -71,6 +71,7 @@ const Navbar = () => {
           <li><Link to="/courses">Courses</Link></li>
           <li><Link to="/blog">Blog</Link></li>
           <li><Link to="/about">About</Link></li>
+          <li><Link to="/dashboard">Personal Finances</Link></li>
         </ul>
 
         {currentUser ? (
