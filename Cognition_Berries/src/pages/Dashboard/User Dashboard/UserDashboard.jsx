@@ -41,9 +41,9 @@ if (savedLearningPath) {
     async function fetchDashboardData() {
       setLoading(true);
       setError("");
-
       try {
         // Fetch dashboard data - this now returns only enrolled courses
+        // I HAVE TO CHNAGE THIS TO FETCH RESULTS ROM THE INTERACTIVE LEARNING PAGE not dasbhbaord
         const dashResponse = await apiRequest('/dashboard/user', { method: 'GET' });
         const dashData = await dashResponse.json();
 
@@ -84,10 +84,10 @@ if (savedLearningPath) {
       }
     }
 
-    fetchDashboardData();
-  }, []);
+    fetchDashboardData()
+  }, [])
 
-  // Timer logic
+  // study timer
   useEffect(() => {
     let interval;
     if (isTimeTrackerRunning) {
@@ -114,8 +114,7 @@ if (savedLearningPath) {
   const handleContinueCourse = (course) => {
     const courseId = course.courseId || course.course_id || course._id;
     if (courseId) {
-      // Navigate to the course learning page
-      console.log("🚀 Navigating to course:", courseId);
+      // Navigate to the course learning page, this shouls navigate to the interactive learning
       navigate(`/learn/${courseId}`);
     } else {
       console.error("No valid course ID found:", course);
@@ -132,11 +131,7 @@ if (savedLearningPath) {
       image: course.image || course.imageUrl,
       progress: getCourseProgress(course.courseId || course.course_id || course._id)
     };
-  };
-
-  // Rest of your component remains the same...
-  // Only the handleContinueCourse function was updated
-
+  }
   return (
     <div className="udb-root">
       <Navbar/>
@@ -149,6 +144,7 @@ if (savedLearningPath) {
           </div>
         </div>
 
+{/* side nav bar */}
         <nav className="udb-sidebar-nav">
           <div className="udb-sidebar-section">Learning</div>
 
@@ -157,7 +153,7 @@ if (savedLearningPath) {
             <span>Dashboard</span>
           </a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/courses'); }} className="udb-sidebar-link">
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/courses') }} className="udb-sidebar-link">
             <BookOpen size={20} />
             <span>My Courses</span>
           </a>
@@ -211,19 +207,11 @@ if (savedLearningPath) {
             </div>
 
             <div className="udb-header-actions">
-              <div className="udb-header-search-wrap">
+              {/* <div className="udb-header-search-wrap">
                 <Search className="udb-header-search-icon" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search courses..."
-                  className="udb-header-search"
-                />
+                <input type="text" placeholder="Search courses..." className="udb-header-search"/>
               </div>
-
-              <button className="udb-header-bell">
-                <Bell size={20} />
-                <span className="udb-header-bell-badge">3</span>
-              </button>
+ */}
 
               <div className="udb-header-user-row">
                 <div className="udb-header-user-avatar">
@@ -300,35 +288,22 @@ if (savedLearningPath) {
           Your Personalized Learning Path
         </h3>
         <p className="udb-section-subtitle">
-          Recommended for you based on your financial goals and interests
+          Recommended for you based on your financial goals and interests from the completed quiz
         </p>
       </div>
 
       <div className="udb-learning-path-badge">
-        🎯 Personalized
+         Personalized
       </div>
     </div>
 
     <div className="udb-learning-path-list">
       {learningPath.map((lesson, index) => (
-        <div
-          key={index}
-          className={`udb-learning-path-item ${
-            index === 0 ? "udb-learning-path-current" : ""
-          }`}
-        >
-          <div className="udb-learning-path-number">
-            {index + 1}
-          </div>
-
+        <div key={index} className={`udb-learning-path-item ${index === 0 ? "udb-learning-path-current" : ""}`}>
+          <div className="udb-learning-path-number">{index + 1}</div>
           <div className="udb-learning-path-info">
             <h4>{lesson}</h4>
-
-            <p>
-              {index === 0
-                ? "Start here to build a strong financial foundation."
-                : "Continue building your financial knowledge."}
-            </p>
+            <p>{index === 0 ? "Start here to build a strong financial foundation." : "Continue building your financial knowledge."}</p>
           </div>
 
           <div className="udb-learning-path-status">
@@ -356,10 +331,7 @@ if (savedLearningPath) {
                   <div className="empty-state-icon">📚</div>
                   <p className="empty-state-text">No courses enrolled yet</p>
                   <p className="empty-state-subtext">Start your learning journey by enrolling in courses</p>
-                  <button 
-                    className="udb-btn udb-btn-green"
-                    onClick={() => navigate('/courses')}
-                  >
+                  <button  className="udb-btn udb-btn-green" onClick={() => navigate('/courses')}>
                     Browse Courses
                   </button>
                 </div>
@@ -373,11 +345,7 @@ if (savedLearningPath) {
                       <div key={index} className="udb-progress-item">
                         <div className="udb-progress-icon">
                           {courseInfo.image ? (
-                            <img 
-                              src={courseInfo.image} 
-                              alt={courseInfo.title}
-                              className="udb-course-image"
-                            />
+                            <img  src={courseInfo.image}  alt={courseInfo.title} className="udb-course-image"/>
                           ) : (
                             "📚"
                           )}
@@ -417,8 +385,7 @@ if (savedLearningPath) {
               )}
             </div>
 
-            {/* Rest of your dashboard UI remains the same... */}
-            {/* Study Timer & Goals */}
+            {/* Study timer and achienvements */}
             <div className="udb-main-grid-side">
               {/* Study Timer */}
               <div className="udb-timer-box">
@@ -426,14 +393,10 @@ if (savedLearningPath) {
                 <div className="udb-timer-center">
                   <div className="udb-timer-time">{formatTime(timeElapsed)}</div>
                   <div className="udb-timer-btn-row">
-                    <button
-                      onClick={() => setIsTimeTrackerRunning(!isTimeTrackerRunning)}
-                      className="udb-btn udb-btn-timer"
-                    >
+                    <button onClick={() => setIsTimeTrackerRunning(!isTimeTrackerRunning)} className="udb-btn udb-btn-timer">
                       {isTimeTrackerRunning ? <Pause size={20} /> : <Play size={20} />}
                     </button>
-                    <button
-                      onClick={() => {
+                    <button onClick={() => {
                         setIsTimeTrackerRunning(false);
                         setTimeElapsed(0);
                       }}
@@ -466,8 +429,7 @@ if (savedLearningPath) {
                           </span>
                         </div>
                         <div className="udb-goal-bar-bg">
-                          <div
-                            className={`udb-goal-bar ${
+                          <div className={`udb-goal-bar ${
                               percentage >= 100 ? 'udb-goal-bar-green' :
                               percentage >= 70 ? 'udb-goal-bar-yellow' : 'udb-goal-bar-red'
                             }`}
@@ -481,32 +443,8 @@ if (savedLearningPath) {
               </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="udb-main-grid-activity">
-              <h3 className="udb-section-title">Recent Activity</h3>
-              {recentActivity.length === 0 ? (
-                <div className="empty-state-small">
-                  <p>No recent activity</p>
-                </div>
-              ) : (
-                <div className="udb-activity-list">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="udb-activity-item">
-                      <div className="udb-activity-icon">{activity.icon || '📌'}</div>
-                      <div className="udb-activity-info">
-                        <p className="udb-activity-title">{activity.title}</p>
-                        <p className="udb-activity-time">
-                          {new Date(activity.time).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Achievements */}
-            <div className="udb-main-grid-achievements">
+            {/* <div className="udb-main-grid-achievements">
               <h3 className="udb-section-title">Achievements</h3>
               <div className="udb-achievements-list">
                 {achievements.map((achievement, index) => (
@@ -539,7 +477,7 @@ if (savedLearningPath) {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -547,4 +485,4 @@ if (savedLearningPath) {
   );
 };
 
-export default UserDashboard;
+export default UserDashboard
