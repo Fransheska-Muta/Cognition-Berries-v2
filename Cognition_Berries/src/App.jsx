@@ -21,7 +21,8 @@ import PhoneLogin from "./pages/AuthPages/PhoneLogin"
 import { useAuth } from "./Context/AuthContext" // Import useAuth hook
 import BookDetail from "./pages/Book Details/BookDetails"
 import Blog from "./pages/BlogPage/BlogPage"
-import ForumHome from "./pages/ComminityForum/ForumHome"
+import ForumHome from "./pages/ComminityForum/ForumHome";
+import FinancialDashboard from "./pages/FinancialDashboard/FinancialDashboard"
 
 // Updated ProtectedRoute to use AuthContext
 const ProtectedRoute = ({ children }) => {
@@ -52,6 +53,7 @@ function App() {
         <Route path='/extra-material' element={<ProtectedRoute><ExtraMaterial /></ProtectedRoute>} />
         <Route path="/extra-material/:id" element={<BookDetail />} />
         <Route path='/blog' element={<Blog />}/>
+        <Route path="/FinancialDashboard" element={<FinancialDashboard />} />
         <Route path='/cart' element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
         <Route path='/checkout' element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
         <Route path='/order-success' element={<ProtectedRoute><OrdersSummary /></ProtectedRoute>} />
