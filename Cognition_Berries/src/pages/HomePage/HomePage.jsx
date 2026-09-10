@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AiTutorModal from "../../components/AiTutorModal/AiTutorModal";
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { apiRequest } from '../../config/api';
@@ -10,6 +11,7 @@ const HomePage = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showTutor, setShowTutor] = useState(false);
 
   useEffect(() => {
   const fetchCourses = async () => {
@@ -142,7 +144,11 @@ const HomePage = () => {
             <h3> Personalized Learning</h3>
             <p>Start my learning path</p>
           </div>
-          <div className="reason-blk">
+          <div className="reason-blk"
+           onClick={() => setShowTutor(true)}
+           style={{ cursor: 'pointer' }}
+           role="button"
+           tabIndex={0}>
             <p>👨‍🏫</p>
             <h3>AI Financial Tutor</h3>
             <p>Get one-on-one guidance from financial ai bot. <br/> Ask, Learn and Practice</p>
@@ -189,6 +195,7 @@ const HomePage = () => {
       </section>
 
       <Footer />
+      <AiTutorModal isOpen={showTutor} onClose={() => setShowTutor(false)} />
     </div>
   );
 };
