@@ -2891,6 +2891,64 @@ app.get("/dashboard/user", requireAuth, async (req, res) => {
       certificatesEarned: completedCourses
     };
 
+    // ----------------------- AI Financial Tutor -----------------------
+const tutorLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,             // 10 messages per user per minute
+  message: "You're sending messages too fast. Please slow down.",
+  keyGenerator: (req) => req.user?.uid || req.ip,
+});
+
+app.post("/ai-tutor", requireAuth, tutorLimiter, async (req, res) => {
+  try {
+    const { messages } = req.body;
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "messages array is required" });
+    }
+
+    // Only keep the last 12 turns to control cost/context size
+    const trimmed = messages.slice(-12).map(m => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: String(m.content || "").slice(0, 2000), // guard against huge payloads
+    }));
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 500,
+        system:
+          "You are a friendly financial literacy tutor for a personal finance education app called Cognition Berries. " +
+          "Explain concepts like budgeting, credit, saving, debt, and investing basics in plain, simple language. " +
+          "You are NOT a licensed financial advisor. Never recommend specific stocks, funds, crypto, or investment products. " +
+          "Never give personalized advice on someone's specific portfolio or tell them what to buy or sell. " +
+          "Keep answers concise (2-4 short paragraphs max) and encourage the user to consult a licensed advisor for personal decisions.",
+        messages: trimmed,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error("Anthropic API error:", response.status, errBody);
+      return res.status(502).json({ error: "AI tutor is temporarily unavailable" });
+    }
+
+    const data = await response.json();
+    const reply = data.content?.find(b => b.type === "text")?.text || "Sorry, I couldn't generate a response.";
+
+    res.json({ reply });
+  } catch (err) {
+    console.error("AI tutor error:", err);
+    res.status(500).json({ error: "Failed to reach AI tutor" });
+  }
+});
+
     // Achievements
     const achievements = [];
     if (completedCourses > 0) achievements.push({ name: "First Course", icon: "🎓", earned: true });

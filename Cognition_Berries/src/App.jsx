@@ -22,7 +22,6 @@ import { useAuth } from "./Context/AuthContext" // Import useAuth hook
 import BookDetail from "./pages/Book Details/BookDetails"
 import Blog from "./pages/BlogPage/BlogPage"
 import ForumHome from "./pages/ComminityForum/ForumHome"
-import Onboarding from "./pages/Onboarding/Onboarding"
 
 // Updated ProtectedRoute to use AuthContext
 const ProtectedRoute = ({ children }) => {
@@ -44,7 +43,6 @@ function App() {
         <Route path="/phone-login" element={<PhoneLogin />} />
 
         {/* Protected routes - all render as children */}
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>}/>
         <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
         <Route path='/dashboard' element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
