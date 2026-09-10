@@ -281,11 +281,6 @@ function Onboarding() {
       {/* HEADER */}
 
       <div className="onboarding-header">
-
-        <div className="onboarding-logo">
-          cb
-        </div>
-
         <div className="onboarding-header-text">
           Personalise your learning journey
         </div>
@@ -327,7 +322,7 @@ function Onboarding() {
           <div className="progress-container">
 
             <div className="progress-info">
-
+ {/* for here its eg step 1 of 5 */}
               <span>
                 Step {currentStep + 1} of {questions.length}
               </span>
