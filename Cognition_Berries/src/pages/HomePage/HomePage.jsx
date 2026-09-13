@@ -134,18 +134,18 @@ const HomePage = () => {
         <div className="reasons">
           <div className="reason-blk">
             <p>💡</p>
-            <h3>Expert-Backed Content</h3>
-            <p>All our resources are created by financial experts with years of experience in the stock market.</p>
+            <h3>Financial Simulator</h3>
+            <p>Explore simulators</p>
           </div>
           <div className="reason-blk">
             <p>🕹️</p>
-            <h3>Interactive Learning</h3>
-            <p>Engage with quizzes, simulations, and gamified experiences that make learning enjoyable.</p>
+            <h3> Personalized Learning</h3>
+            <p>Start my learning path</p>
           </div>
           <div className="reason-blk">
             <p>👨‍🏫</p>
-            <h3>Personalized Coaching</h3>
-            <p>Get one-on-one guidance from financial coaches who understand your goals.</p>
+            <h3>AI Financial Tutor</h3>
+            <p>Get one-on-one guidance from financial ai bot. <br/> Ask, Learn and Practice</p>
           </div>
         </div>
       </section>

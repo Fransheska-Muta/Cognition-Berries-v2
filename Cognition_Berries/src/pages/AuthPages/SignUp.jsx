@@ -29,7 +29,7 @@ const SignUpPage = () => {
   const [otp, setOtp] = useState("");
   const [confirmation, setConfirmation] = useState(null);
 
-  // handle input
+  // handle input 
   const handleChange = e => {
     setCredentials(prev => ({
       ...prev,
@@ -129,7 +129,7 @@ const SignUpPage = () => {
       );
 
       alert(`Welcome to Cognition Berries, ${credentials.name || credentials.email}!`);
-      navigate("/home");
+      navigate("/onboarding");
 
     } catch (error) {
       console.error("Sign up error:", error);
