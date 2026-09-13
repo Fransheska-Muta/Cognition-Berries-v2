@@ -4,7 +4,8 @@ import SignUp from './pages/AuthPages/SignUp'
 import Login from './pages/AuthPages/Login'
 import HomePage from './pages/HomePage/HomePage'
 import NotFound from './pages/NotFound/NotFound'
-import UserDashboard from "./pages/Dashboard/User Dashboard/UserDashboard"
+// import UserDashboard from "./pages/Dashboard/User Dashboard/UserDashboard"
+import FinancialDashboard from "./pages/FinancialDashboard/FinancialDashboard"
 import LandingPage from "./pages/LandingPage/LandingPage"
 import AboutUs from "./pages/AboutPage/AboutPage"
 import Courses from "./pages/Courses/Courses"
@@ -47,7 +48,7 @@ function App() {
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>}/>
         <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-        <Route path='/dashboard' element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path='/dashboard' element={<ProtectedRoute><FinancialDashboard /></ProtectedRoute>} />
         <Route path='/community-forum' element={<ProtectedRoute><ForumHome /></ProtectedRoute>} />
         <Route path="/course/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/course/:courseId/learn" element={<ProtectedRoute><CourseLearning /></ProtectedRoute>} />
