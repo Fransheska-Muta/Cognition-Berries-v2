@@ -1,143 +1,304 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../config/api";
 import "./FinancialDashboard.css";
 import Navbar from "../../components/Navbar/Navbar";
 
 function FinancialDashboard() {
     const navigate = useNavigate();
-
     const [showGoals, setShowGoals] = useState(false);
     const [showActivity, setShowActivity] = useState(false);
-
-// personalisede learning from the onboarding quiz
+    // Personalised learning from onboarding quiz
     const [onboardingData, setOnboardingData] = useState(null);
     const [learningPath, setLearningPath] = useState([]);
-
+    // Courses and progress
+    const [courses, setCourses] = useState([]);
+    const [enrolledCourses, setEnrolledCourses] = useState([]);
+    const [allProgress, setAllProgress] = useState([]);
+    const [loadingCourses, setLoadingCourses] = useState(true);
+    const [courseError, setCourseError] = useState("");
+    // Dashboard stats
+    const [stats, setStats] = useState({
+        totalCourses: 0,
+        completedCourses: 0,
+        totalStudyTime: 0,
+        averageScore: 0
+    });
+    const [studyStreak, setStudyStreak] = useState(0);
     useEffect(() => {
         // Get the answers saved after the onboarding quiz
-        const savedOnboarding = localStorage.getItem(
-            "cognitionBerriesOnboarding"
-        );
-
+        const savedOnboarding = localStorage.getItem( "cognitionBerriesOnboarding")
         if (savedOnboarding) {
             try {
                 setOnboardingData(JSON.parse(savedOnboarding));
             } catch (error) {
-                console.error(
-                    "Could not load onboarding information:",
-                    error
-                );
+                console.error( "Could not load onboarding information:", error)
             }
         }
-
         // Get the personalized learning path created by the quiz
         const savedLearningPath = localStorage.getItem("cognitionBerriesLearningPath")
         if (savedLearningPath) {
             try {
                 const parsedPath = JSON.parse(savedLearningPath);
+
                 if (Array.isArray(parsedPath)) {
                     setLearningPath(parsedPath);
                 }
             } catch (error) {
-                console.error("Could not load personalized learning path:",error)
+                console.error( "Could not load personalized learning path:", error)
             }
         }
     }, []);
 
-// helper functions
+    useEffect(() => {
+        async function fetchDashboardData() {
+            setLoadingCourses(true);
+            setCourseError("");
+
+            try {
+                const coursesResponse = await apiRequest("/courses", {
+                    method: "GET"
+                })
+                const coursesData = await coursesResponse.json()
+                if (!coursesResponse.ok) {
+                    throw new Error( coursesData?.message ||"Failed to fetch courses")
+                }
+                // console.log("📚 Courses:", coursesData);
+                const fetchedCourses = Array.isArray(coursesData) ? coursesData : coursesData.courses || []
+                setCourses(fetchedCourses);
+                const dashResponse = await apiRequest("/dashboard/user",{
+                        method: "GET"
+                    }
+                )
+                const dashData = await dashResponse.json();
+                if (!dashResponse.ok) {
+                    throw new Error(dashData?.message ||"Failed to fetch dashboard data")
+                }
+                console.log("📊 Dashboard data:", dashData);
+                setEnrolledCourses(dashData.enrolledCourses || [])
+                setAllProgress(dashData.allProgress || [])
+                setStudyStreak(dashData.studyStreak || 0)
+
+                const progressStats = dashData.progress || {};
+                setStats({
+                    totalCourses:progressStats.totalCourses || 0,
+                    completedCourses:progressStats.completedCourses || 0,
+                    totalStudyTime:progressStats.totalStudyTime || 0,
+                    averageScore:progressStats.averageScore || 0
+                })
+
+            } catch (error) {
+                console.error("Dashboard/course fetch error:",error)
+                setCourseError(error.message)
+            } finally {
+                setLoadingCourses(false)
+            }
+        }
+        fetchDashboardData();
+    }, []);
     const getValue = (...possibleValues) => {
         for (const value of possibleValues) {
-            if (value !== undefined &&value !== null &&value !== "") {
+            if ( value !== undefined && value !== null && value !== "") {
                 return value
             }
         }
         return null
     }
-
     const formatValue = (value) => {
         if (Array.isArray(value)) {
             return value.join(", ");
         }
 
-        if (typeof value === "object" && value !== null) {
-            return Object.values(value).join(", ");
+        if ( typeof value === "object" && value !== null ) {
+            return Object.values(value).join(", ")
         }
-
-        return value;
+        return value
+    };
+    const knowledgeLevel = getValue(onboardingData?.knowledgeLevel,onboardingData?.financialKnowledge,onboardingData?.knowledge,onboardingData?.financialKnowledgeLevel) || "Intermediate";
+    const learningGoals = getValue(onboardingData?.goals,onboardingData?.learningGoals,onboardingData?.financialGoals) || [];
+    const interests = getValue(onboardingData?.interests,onboardingData?.financialInterests) || [];
+    const biggestLearningGoal = getValue(onboardingData?.biggestLearningGoal,onboardingData?.mainLearningGoal,onboardingData?.primaryGoal);
+    const getKnowledgeBars = (level) => {
+    const levelText = String(level).toLowerCase()
+        if (levelText.includes("beginner") ||levelText.includes("basic")) {
+            return 3
+        }
+        if (levelText.includes("advanced") ||levelText.includes("expert")) {
+            return 8
+        }
+        return 5
+    };
+    const activeKnowledgeBars = getKnowledgeBars(knowledgeLevel);
+    const getCourseId = (course) => {
+        return (
+            course?.courseId ||
+            course?.course_id ||
+            course?._id ||
+            course?.id
+        );
     };
 
-    // Try to find the knowledge answer regardless of the exact
-    // property name used in the onboarding component.
-    const knowledgeLevel =
-        getValue(
-            onboardingData?.knowledgeLevel,
-            onboardingData?.financialKnowledge,
-            onboardingData?.knowledge,
-            onboardingData?.financialKnowledgeLevel
-        ) || "Intermediate";
+    const getCourseTitle = (course) => {
+        return (
+            course?.courseName ||
+            course?.title ||
+            course?.name ||
+            "Untitled Course"
+        );
+    };
 
-    const learningGoals =
-        getValue(
-            onboardingData?.goals,
-            onboardingData?.learningGoals,
-            onboardingData?.financialGoals
-        ) || [];
+    // const getCourseInstructor = (course) => {
+    //     return (
+    //         course?.instructor ||
+    //         course?.author ||
+    //         course?.createdBy ||
+    //         "Cognition Berries"
+    //     );
+    // };
 
-    const interests =
-        getValue(
-            onboardingData?.interests,
-            onboardingData?.financialInterests
-        ) || [];
+    // const getCourseDescription = (course) => {
+    //     return (
+    //         course?.description ||
+    //         course?.courseDescription ||
+    //         ""
+    //     );
+    // };
 
-    const biggestLearningGoal =
-        getValue(
-            onboardingData?.biggestLearningGoal,
-            onboardingData?.mainLearningGoal,
-            onboardingData?.primaryGoal
+    // const getCourseImage = (course) => {
+    //     return (
+    //         course?.image ||
+    //         course?.imageUrl ||
+    //         course?.thumbnail ||
+    //         course?.thumbnailUrl
+    //     );
+    // };
+    const getCourseProgress = (courseId) => {
+        if (!courseId) {
+            return 0;
+        }
+
+        const progress = allProgress.find(
+            (item) =>
+                String(
+                    item.courseId ||
+                    item.course_id ||
+                    item._id
+                ) === String(courseId)
         );
 
-// knowledge level display
-    const getKnowledgeBars = (level) => {
-        const levelText = String(level).toLowerCase();
+        return progress?.percentComplete || 0;
+    };
 
+    const handleContinueCourse = (course) => {
+        const courseId = getCourseId(course);
+
+        if (courseId) {
+            console.log(
+                "Opening course:",
+                getCourseTitle(course),
+                courseId
+            );
+
+            navigate(`/learn/${courseId}`);
+        } else {
+            console.error(
+                "No valid course ID found:",
+                course
+            );
+
+            alert(
+                "Unable to open course. Please try again."
+            );
+        }
+    };
+
+    const getPersonalizedCourses = () => {
         if (
-            levelText.includes("beginner") ||
-            levelText.includes("basic")
+            !Array.isArray(courses) ||
+            courses.length === 0
         ) {
-            return 3;
+            return [];
         }
 
         if (
-            levelText.includes("advanced") ||
-            levelText.includes("expert")
+            !Array.isArray(learningPath) ||
+            learningPath.length === 0
         ) {
-            return 8;
+            return [];
         }
 
-        return 5;
+        const matchedCourses = [];
+
+        learningPath.forEach((lesson) => {
+            if (!lesson) {
+                return;
+            }
+
+            const lessonName = String(
+                typeof lesson === "object"
+                    ? lesson.title ||
+                          lesson.courseName ||
+                          lesson.name ||
+                          ""
+                    : lesson
+            )
+                .toLowerCase()
+                .trim();
+
+            if (!lessonName) {
+                return;
+            }
+            let matchedCourse = courses.find(
+                (course) =>
+                    getCourseTitle(course)
+                        .toLowerCase()
+                        .trim() === lessonName
+            );
+
+            if (!matchedCourse) {
+                matchedCourse = courses.find((course) => {
+                    const courseTitle =
+                        getCourseTitle(course)
+                            .toLowerCase()
+                            .trim();
+
+                    return (
+                        courseTitle.includes(lessonName) ||
+                        lessonName.includes(courseTitle)
+                    );
+                });
+            }
+
+            /*
+             * Avoid adding the same course twice.
+             */
+            if (
+                matchedCourse &&
+                !matchedCourses.some(
+                    (course) =>
+                        String(
+                            getCourseId(course)
+                        ) ===
+                        String(
+                            getCourseId(matchedCourse)
+                        )
+                )
+            ) {
+                matchedCourses.push(matchedCourse);
+            }
+        });
+
+        return matchedCourses;
     };
 
-    const activeKnowledgeBars = getKnowledgeBars(knowledgeLevel);
+    const personalizedCourses =
+        getPersonalizedCourses();
 
-// suggested learning path
-    const recommendedCourse =
-        learningPath.length > 0
-            ? learningPath[0]
-            : "Introduction to Investing";
+    const recommendedCourses =
+        personalizedCourses.length > 0
+            ? personalizedCourses
+            : courses.slice(0, 3);
 
-    const handleStartCourse = () => {
-        /*
-         * The onboarding learning path currently contains lesson names,
-         * rather than course IDs.
-         *
-         * For now, take the learner to the Courses page.
-         * Once the learning-path items are connected to real course IDs,
-         * this can navigate directly to the selected course.
-         */
-        navigate("/courses");
-    };
-
-// used to display goals
     const displayGoals = Array.isArray(learningGoals)
         ? learningGoals
         : [learningGoals];
@@ -148,35 +309,44 @@ function FinancialDashboard() {
 
     return (
         <div className="dashboard">
+
             <Navbar />
 
             <div className="dashboard-card">
                 <div className="welcome-section">
 
                     <div>
+
                         <h1>
-                            Welcome back, Thabo!
+                            Welcome back,{" "}
+                            {onboardingData?.name ||
+                                onboardingData?.firstName ||
+                                "Thabo"}
+                            !
                         </h1>
 
                         <p>
                             Keep up the great work!
                         </p>
+
                     </div>
 
                     <button
                         className="edit-button"
-                        onClick={() => setShowGoals(!showGoals)}
+                        onClick={() =>
+                            setShowGoals(!showGoals)
+                        }
                     >
                         Edit Goals
                     </button>
 
                 </div>
-
-{/* goals message */}
                 {showGoals && (
                     <div className="goals-message">
 
-                        <strong>Your Learning Goals</strong>
+                        <strong>
+                            Your Learning Goals
+                        </strong>
 
                         {displayGoals.length > 0 &&
                         displayGoals[0] ? (
@@ -187,40 +357,54 @@ function FinancialDashboard() {
                             </p>
                         ) : (
                             <p>
-                                Keep learning and reach your next
-                                milestone!
+                                Keep learning and reach
+                                your next milestone!
                             </p>
                         )}
 
                         {biggestLearningGoal && (
                             <p>
-                                <strong>Main goal:</strong>{" "}
-                                {formatValue(biggestLearningGoal)}
+                                <strong>
+                                    Main goal:
+                                </strong>{" "}
+                                {formatValue(
+                                    biggestLearningGoal
+                                )}
                             </p>
                         )}
 
                         <button
-                            onClick={() => setShowGoals(false)}
+                            onClick={() =>
+                                setShowGoals(false)
+                            }
                         >
                             Close
                         </button>
 
                     </div>
                 )}
-
-{/* stats for the dashboard */}
                 <div className="stats-grid">
 
                     {/* Courses Completed */}
+
                     <div className="stat-card">
 
-                        <p>Courses Completed</p>
+                        <p>
+                            Courses Completed
+                        </p>
 
                         <div className="stat-bottom">
 
                             <div>
-                                <h2>12</h2>
-                                <span>/24</span>
+
+                                <h2>
+                                    {stats.completedCourses}
+                                </h2>
+
+                                <span>
+                                    /{stats.totalCourses}
+                                </span>
+
                             </div>
 
                             <div className="stat-icon blue">
@@ -233,12 +417,24 @@ function FinancialDashboard() {
 
 
                     {/* Current Course */}
+
                     <div className="stat-card">
 
-                        <p>Current Course</p>
+                        <p>
+                            Current Course
+                        </p>
 
                         <h3>
-                            Saving
+                            {enrolledCourses.length > 0
+                                ? getCourseTitle(
+                                      enrolledCourses[0]
+                                  )
+                                : personalizedCourses.length >
+                                  0
+                                ? getCourseTitle(
+                                      personalizedCourses[0]
+                                  )
+                                : "No course yet"}
                         </h3>
 
                         <div className="stat-icon purple">
@@ -249,34 +445,69 @@ function FinancialDashboard() {
 
 
                     {/* Course Progress */}
+
                     <div className="stat-card">
 
-                        <p>Course Progress</p>
+                        <p>
+                            Course Progress
+                        </p>
 
-                        <h2>65%</h2>
+                        <h2>
+                            {enrolledCourses.length > 0
+                                ? Math.round(
+                                      getCourseProgress(
+                                          getCourseId(
+                                              enrolledCourses[0]
+                                          )
+                                      )
+                                  )
+                                : 0}
+                            %
+                        </h2>
 
                         <div className="progress-bar">
+
                             <div
                                 className="progress"
                                 style={{
-                                    width: "65%"
+                                    width: `${
+                                        enrolledCourses.length >
+                                        0
+                                            ? getCourseProgress(
+                                                  getCourseId(
+                                                      enrolledCourses[0]
+                                                  )
+                                              )
+                                            : 0
+                                    }%`
                                 }}
                             ></div>
+
                         </div>
 
                     </div>
 
 
                     {/* Learning Streak */}
+
                     <div className="stat-card">
 
-                        <p>Learning Streak</p>
+                        <p>
+                            Learning Streak
+                        </p>
 
                         <div className="stat-bottom">
 
                             <div>
-                                <h2>14</h2>
-                                <span>days</span>
+
+                                <h2>
+                                    {studyStreak}
+                                </h2>
+
+                                <span>
+                                    days
+                                </span>
+
                             </div>
 
                             <div className="stat-icon orange">
@@ -289,13 +520,18 @@ function FinancialDashboard() {
 
 
                     {/* Quiz Score */}
+
                     <div className="stat-card">
 
-                        <p>Quiz Score (Avg)</p>
+                        <p>
+                            Quiz Score (Avg)
+                        </p>
 
                         <div className="stat-bottom">
 
-                            <h2>82%</h2>
+                            <h2>
+                                {stats.averageScore}%
+                            </h2>
 
                             <div className="stat-icon teal">
                                 ✓
@@ -305,7 +541,9 @@ function FinancialDashboard() {
 
                     </div>
 
-{/* knowledge level */}
+
+                    {/* Knowledge Level */}
+
                     <div className="stat-card">
 
                         <p>
@@ -313,7 +551,9 @@ function FinancialDashboard() {
                         </p>
 
                         <h3>
-                            {formatValue(knowledgeLevel)}
+                            {formatValue(
+                                knowledgeLevel
+                            )}
                         </h3>
 
                         <div className="level-bars">
@@ -321,6 +561,7 @@ function FinancialDashboard() {
                             {Array.from({
                                 length: 8
                             }).map((_, index) => (
+
                                 <span
                                     key={index}
                                     className={
@@ -330,13 +571,16 @@ function FinancialDashboard() {
                                             : ""
                                     }
                                 ></span>
+
                             ))}
 
                         </div>
 
                     </div>
 
-{/* learning goals */}
+
+                    {/* Learning Goals */}
+
                     <div className="stat-card">
 
                         <p>
@@ -348,6 +592,7 @@ function FinancialDashboard() {
                             <div>
 
                                 <h2>
+
                                     {Array.isArray(
                                         learningGoals
                                     )
@@ -358,6 +603,7 @@ function FinancialDashboard() {
                                         {" "}
                                         selected
                                     </span>
+
                                 </h2>
 
                                 <small>
@@ -376,6 +622,7 @@ function FinancialDashboard() {
 
 
                     {/* XP Points */}
+
                     <div className="stat-card">
 
                         <p>
@@ -398,14 +645,13 @@ function FinancialDashboard() {
 
                 </div>
 
-
-{/* personailized learning path */}
                 {learningPath.length > 0 && (
 
                     <div
                         className="personalized-learning-card"
                         style={{
-                            border: "1px solid #e3e0e8",
+                            border:
+                                "1px solid #e3e0e8",
                             borderRadius: "10px",
                             padding: "20px",
                             marginBottom: "18px",
@@ -429,12 +675,14 @@ function FinancialDashboard() {
 
                                 <h3
                                     style={{
-                                        margin: "0 0 6px",
+                                        margin:
+                                            "0 0 6px",
                                         fontSize: "15px",
                                         color: "#222"
                                     }}
                                 >
-                                    Your Personalized Learning Path
+                                    Your Personalized
+                                    Learning Path
                                 </h3>
 
                                 <p
@@ -445,20 +693,27 @@ function FinancialDashboard() {
                                         lineHeight: "1.5"
                                     }}
                                 >
-                                    Recommended for you based on
-                                    your onboarding quiz answers.
+                                    Recommended for you
+                                    based on your
+                                    onboarding quiz
+                                    answers.
                                 </p>
 
                             </div>
 
                             <span
                                 style={{
-                                    background: "#eee4ff",
-                                    color: "#7045c5",
-                                    padding: "6px 10px",
-                                    borderRadius: "20px",
+                                    background:
+                                        "#eee4ff",
+                                    color:
+                                        "#7045c5",
+                                    padding:
+                                        "6px 10px",
+                                    borderRadius:
+                                        "20px",
                                     fontSize: "10px",
-                                    fontWeight: "600"
+                                    fontWeight:
+                                        "600"
                                 }}
                             >
                                 Personalized
@@ -477,7 +732,8 @@ function FinancialDashboard() {
                                     <div
                                         key={index}
                                         style={{
-                                            display: "flex",
+                                            display:
+                                                "flex",
                                             alignItems:
                                                 "center",
                                             gap: "12px",
@@ -492,12 +748,12 @@ function FinancialDashboard() {
                                         }}
                                     >
 
-                                        {/* Number */}
-
                                         <div
                                             style={{
-                                                width: "32px",
-                                                height: "32px",
+                                                width:
+                                                    "32px",
+                                                height:
+                                                    "32px",
                                                 minWidth:
                                                     "32px",
                                                 borderRadius:
@@ -528,8 +784,6 @@ function FinancialDashboard() {
                                         </div>
 
 
-                                        {/* Lesson */}
-
                                         <div
                                             style={{
                                                 flex: 1
@@ -546,7 +800,12 @@ function FinancialDashboard() {
                                                         "13px"
                                                 }}
                                             >
-                                                {lesson}
+                                                {typeof lesson ===
+                                                "object"
+                                                    ? lesson.title ||
+                                                      lesson.courseName ||
+                                                      lesson.name
+                                                    : lesson}
                                             </h4>
 
                                             <p
@@ -565,8 +824,6 @@ function FinancialDashboard() {
 
                                         </div>
 
-
-                                        {/* Status */}
 
                                         <div
                                             style={{
@@ -601,12 +858,14 @@ function FinancialDashboard() {
                     </div>
 
                 )}
+
                 {onboardingData && (
 
                     <div
                         className="onboarding-summary"
                         style={{
-                            border: "1px solid #e3e0e8",
+                            border:
+                                "1px solid #e3e0e8",
                             borderRadius: "10px",
                             padding: "18px",
                             marginBottom: "18px",
@@ -634,8 +893,6 @@ function FinancialDashboard() {
                                 gap: "12px"
                             }}
                         >
-
-                            {/* Knowledge */}
 
                             <div>
 
@@ -668,8 +925,6 @@ function FinancialDashboard() {
                             </div>
 
 
-                            {/* Goals */}
-
                             <div>
 
                                 <small
@@ -701,8 +956,6 @@ function FinancialDashboard() {
 
                             </div>
 
-
-                            {/* Interests */}
 
                             <div>
 
@@ -741,48 +994,69 @@ function FinancialDashboard() {
 
                 )}
                 <div className="bottom-section">
-                    <div className="recommended-card">
 
-                        <h3>
-                            Recommended Next Course
-                        </h3>
 
-                        <div className="recommended-content">
+          <div className="recommended-card">
+  <div className="recommended-header">
+    <h3>Recommended Next Course</h3>
+  </div>
 
-                            <div className="course-image">
-                                📈
-                            </div>
+  <div className="recommended-content">
+    {loadingCourses ? (
+      <p>Loading recommended courses...</p>
+    ) : courseError ? (
+      <p>{courseError}</p>
+    ) : recommendedCourses.length === 0 ? (
+      <p>No recommended courses available yet.</p>
+    ) : (
+      recommendedCourses.map((course) => {
+        const courseId =
+          course.courseId ||
+          course.course_id ||
+          course._id ||
+          course.id;
 
-                            <div className="course-info">
+        const courseTitle =
+          course.title ||
+          course.name ||
+          "Untitled Course";
 
-                                <h2>
-                                    {recommendedCourse}
-                                </h2>
+        const progress = getCourseProgress(courseId);
 
-                                <p>
-                                    This course has been selected
-                                    based on your personalized
-                                    learning path.
-                                </p>
+        return (
+          <div className="recommended-course" key={courseId || courseTitle}>
+            <div className="course-info">
+              <h4>{courseTitle}</h4>
 
-                                <small>
-                                    Estimated time: 30 min
-                                </small>
+              {course.description && (
+                <p>{course.description}</p>
+              )}
 
-                                <button
-                                    className="course-button"
-                                    onClick={
-                                        handleStartCourse
-                                    }
-                                >
-                                    Start Course →
-                                </button>
+              <div className="course-progress">
+                <div className="progress-bar">
+                  <div
+                    className="progress"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
 
-                            </div>
+                <span>{progress}% complete</span>
+              </div>
+            </div>
 
-                        </div>
+            <button
+              className="course-button"
+              onClick={() => handleContinueCourse(course)}
+            >
+              {progress > 0 ? "Continue" : "Start"}
+            </button>
+          </div>
+        );
+      })
+    )}
+  </div>
+</div>
 
-                    </div>
                     <div className="activity-card">
 
                         <div className="activity-header">
@@ -832,6 +1106,7 @@ function FinancialDashboard() {
 
                             </div>
 
+
                             <div className="activity-item">
 
                                 <div className="activity-icon blue">
@@ -855,6 +1130,8 @@ function FinancialDashboard() {
                                 </small>
 
                             </div>
+
+
                             <div className="activity-item">
 
                                 <div className="activity-icon yellow">
@@ -879,6 +1156,7 @@ function FinancialDashboard() {
 
                             </div>
 
+
                             {showActivity && (
 
                                 <div className="extra-activity">
@@ -896,7 +1174,12 @@ function FinancialDashboard() {
                                             </strong>
 
                                             <span>
-                                                Introduction to Investing
+                                                {personalizedCourses.length >
+                                                0
+                                                    ? getCourseTitle(
+                                                          personalizedCourses[0]
+                                                      )
+                                                    : "Introduction to Investing"}
                                             </span>
 
                                         </div>
