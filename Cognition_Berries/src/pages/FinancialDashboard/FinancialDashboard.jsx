@@ -127,25 +127,17 @@ function FinancialDashboard() {
             return 8
         }
         return 5
-    };
+    }
     const activeKnowledgeBars = getKnowledgeBars(knowledgeLevel);
     const getCourseId = (course) => {
-        return (
-            course?.courseId ||
-            course?.course_id ||
-            course?._id ||
-            course?.id
-        );
-    };
+        return ( course?.courseId || course?.course_id || course?._id || course?.id
+        )
+    }
 
     const getCourseTitle = (course) => {
-        return (
-            course?.courseName ||
-            course?.title ||
-            course?.name ||
-            "Untitled Course"
-        );
-    };
+        return ( course?.courseName || course?.title || course?.name ||"Untitled Course"
+        )
+    }
 
     // const getCourseInstructor = (course) => {
     //     return (
