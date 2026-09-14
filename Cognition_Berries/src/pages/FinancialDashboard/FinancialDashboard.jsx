@@ -5,7 +5,7 @@ import Navbar from "../../components/Navbar/Navbar";
 
 function FinancialDashboard() {
     const navigate = useNavigate();
-
+    const [user, setUser] = useState(null);
     const [showGoals, setShowGoals] = useState(false);
     const [showActivity, setShowActivity] = useState(false);
 
