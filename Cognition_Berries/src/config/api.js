@@ -7,7 +7,7 @@ const getApiBaseUrl = () => {
   
   // If no env URL, use default with proper protocol
   if (!envUrl) {
-    return 'http://52.44.223.219:3000';
+    return 'http://localhost:3000';
   }
   
   // If URL already has protocol, use as-is
