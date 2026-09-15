@@ -132,16 +132,16 @@ const HomePage = () => {
           Our platform is designed to make financial education accessible, engaging, and effective for everyone.
         </p>
         <div className="reasons">
-          <div className="reason-blk">
+          <Link to="/financial-simulators" className="reason-blk">
             <p>💡</p>
             <h3>Financial Simulator</h3>
-            <p>Explore simulators</p>
-          </div>
-          <div className="reason-blk">
+            <p>Calculate your interests, investements and also your debts</p>
+          </Link>
+          {/* <div className="reason-blk">
             <p>🕹️</p>
             <h3> Personalized Learning</h3>
             <p>Start my learning path</p>
-          </div>
+          </div> */}
           <div className="reason-blk">
             <p>👨‍🏫</p>
             <h3>AI Financial Tutor</h3>

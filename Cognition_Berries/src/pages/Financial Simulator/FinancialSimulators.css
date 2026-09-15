@@ -1,0 +1,528 @@
+.financial-simulators {
+  min-height: 100vh;
+  background: #f5f3fa;
+  padding: 40px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.simulator-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.back-button {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.back-button:hover {
+  color: #9d1d4f;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.page-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9d1d4f;
+  margin-bottom: 8px;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 38px;
+}
+
+.page-header p {
+  max-width: 650px;
+  margin: 12px auto 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* Tabs */
+
+.simulator-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.simulator-tabs button {
+  border: 1px solid #e3e0eb;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.simulator-tabs button:hover {
+  border-color: #9d1d4f;
+  color: #9d1d4f;
+}
+
+.simulator-tabs button.active {
+  background: #9d1d4f;
+  border-color: #9d1d4f;
+  color: white;
+}
+
+/* Main simulator */
+
+.simulator-card {
+  background: white;
+  border: 1px solid #e3e0eb;
+  border-radius: 18px;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.simulator-heading {
+  margin-bottom: 30px;
+}
+
+.simulator-heading > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.simulator-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f5f3fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
+  flex-shrink: 0;
+}
+
+.simulator-heading h2 {
+  margin: 0 0 5px;
+  color: #0f172a;
+  font-size: 25px;
+}
+
+.simulator-heading p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Calculator */
+
+.calculator-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.input-panel,
+.result-panel {
+  border: 1px solid #e3e0eb;
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.input-panel {
+  background: #faf9fc;
+}
+
+.input-panel h3 {
+  margin: 0 0 20px;
+  color: #0f172a;
+}
+
+.input-panel label {
+  display: block;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.input-with-prefix,
+.input-with-suffix {
+  display: flex;
+  align-items: center;
+  margin-top: 7px;
+  background: white;
+  border: 1px solid #d8d4e2;
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.input-with-prefix span,
+.input-with-suffix span {
+  padding: 0 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.input-with-prefix input,
+.input-with-suffix input {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 12px;
+  font-size: 15px;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.input-with-prefix:focus-within,
+.input-with-suffix:focus-within {
+  border-color: #9d1d4f;
+}
+
+/* Results */
+
+.result-panel {
+  background: #f8f7fb;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.result-label {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.main-result {
+  margin: 0 0 25px;
+  color: #9d1d4f;
+  font-size: 36px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.result-grid div {
+  background: white;
+  border: 1px solid #e3e0eb;
+  border-radius: 10px;
+  padding: 13px;
+}
+
+.result-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.result-grid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+/* Chart */
+
+.chart-card {
+  margin-top: 22px;
+  border: 1px solid #e3e0eb;
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.chart-header h3 {
+  margin: 0 0 5px;
+  color: #0f172a;
+}
+
+.chart-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.sim-chart-wrapper {
+  margin-top: 20px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sim-chart {
+  width: 100%;
+  min-width: 600px;
+  height: 280px;
+}
+
+.chart-axis {
+  stroke: #d8d4e2;
+  stroke-width: 1;
+}
+
+.chart-line {
+  stroke: #9d1d4f;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-line-secondary {
+  stroke: #f59e0b;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+}
+
+.chart-point {
+  fill: white;
+  stroke: #9d1d4f;
+  stroke-width: 3;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 12px;
+  padding: 0 35px;
+}
+
+.sim-chart-empty {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+/* Learning tip */
+
+.learning-tip,
+.warning-box,
+.saving-highlight {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 12px;
+}
+
+.learning-tip {
+  background: #fff8e7;
+  border: 1px solid #f4df9e;
+}
+
+.warning-box {
+  background: #fff8e7;
+  border: 1px solid #f4df9e;
+}
+
+.saving-highlight {
+  background: #ecfdf5;
+  border: 1px solid #b7ead3;
+}
+
+.learning-tip > span,
+.warning-box > span,
+.saving-highlight > span {
+  font-size: 22px;
+}
+
+.learning-tip strong,
+.warning-box strong,
+.saving-highlight strong {
+  color: #0f172a;
+}
+
+.learning-tip p,
+.warning-box p,
+.saving-highlight p {
+  margin: 5px 0 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Debt */
+
+.debt-warning-title {
+  color: #c42d6a;
+  margin: 0 0 10px;
+  font-size: 25px;
+}
+
+.debt-result > p:not(.result-label) {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.scenario-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 20px;
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid #e3e0eb;
+  border-radius: 14px;
+  background: #faf9fc;
+}
+
+.scenario-card > div:not(.scenario-arrow) {
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #e3e0eb;
+}
+
+.scenario-label {
+  font-size: 12px;
+  color: #9d1d4f;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.scenario-card h3 {
+  margin: 8px 0;
+  color: #0f172a;
+}
+
+.scenario-card p {
+  margin: 5px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.scenario-arrow {
+  font-size: 30px;
+  color: #9d1d4f;
+}
+
+/* Footer */
+
+.education-footer {
+  margin-top: 25px;
+  background: white;
+  border: 1px solid #e3e0eb;
+  border-radius: 18px;
+  padding: 25px;
+}
+
+.education-footer h3 {
+  margin: 0 0 7px;
+  color: #0f172a;
+}
+
+.education-footer > p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.education-points {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.education-points div {
+  border: 1px solid #e3e0eb;
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.education-points strong {
+  display: block;
+  color: #0f172a;
+  margin-bottom: 5px;
+}
+
+.education-points span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .financial-simulators {
+    padding: 25px;
+  }
+
+  .calculator-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .result-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .financial-simulators {
+    padding: 18px;
+  }
+
+  .simulator-card {
+    padding: 20px;
+  }
+
+  .page-header h1 {
+    font-size: 30px;
+  }
+
+  .simulator-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-card {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-arrow {
+    text-align: center;
+    transform: rotate(90deg);
+  }
+
+  .education-points {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 450px) {
+  .page-header h1 {
+    font-size: 26px;
+  }
+
+  .simulator-heading h2 {
+    font-size: 21px;
+  }
+
+  .main-result {
+    font-size: 29px;
+  }
+}

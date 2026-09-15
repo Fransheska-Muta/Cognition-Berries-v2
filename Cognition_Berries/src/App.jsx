@@ -24,6 +24,7 @@ import BookDetail from "./pages/Book Details/BookDetails"
 import Blog from "./pages/BlogPage/BlogPage"
 import ForumHome from "./pages/ComminityForum/ForumHome"
 import Onboarding from "./pages/Onboarding/Onboarding"
+import FinancialSimulators from "./pages/Financial Simulator/FinancialSimulators"
 
 // Updated ProtectedRoute to use AuthContext
 const ProtectedRoute = ({ children }) => {
@@ -49,6 +50,8 @@ function App() {
         <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
         <Route path='/dashboard' element={<ProtectedRoute><FinancialDashboard /></ProtectedRoute>} />
+        <Route path='/financial-simulators' element={<ProtectedRoute><FinancialSimulators /></ProtectedRoute>} />
+
         <Route path='/community-forum' element={<ProtectedRoute><ForumHome /></ProtectedRoute>} />
         <Route path="/course/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/course/:courseId/learn" element={<ProtectedRoute><CourseLearning /></ProtectedRoute>} />

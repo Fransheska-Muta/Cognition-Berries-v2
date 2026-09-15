@@ -1,8 +1,3 @@
-/* ==========================================
-   HOMEPAGE STYLES - REDESIGNED
-   Aligned with Global Berry Theme
-   ========================================== */
-
 /* ========== HERO SECTION ========== */
 .hero {
   position: relative;
@@ -267,6 +262,9 @@
   position: relative;
   overflow: hidden;
   text-align: center;
+    text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .reason-blk::before {
