@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import "./FinancialSimulators.css";
 
@@ -8,11 +8,11 @@ const formatCurrency = (value) =>
     style: "currency",
     currency: "ZAR",
     maximumFractionDigits: 0,
-  }).format(Number.isFinite(value) ? value : 0);
+  }).format(Number.isFinite(value) ? value : 0)
 
 const clampNumber = (value, min = 0) => {
   const number = Number(value);
-  return Number.isFinite(number) ? Math.max(min, number) : min;
+  return Number.isFinite(number) ? Math.max(min, number) : min
 };
 
 // savings calculator
@@ -45,26 +45,16 @@ function calculateSavings(startingAmount, monthlyContribution, rate, years) {
 }
 
 
-function calculateInvestment(
-  initialInvestment,
-  monthlyInvestment,
-  rate,
-  years
-) {
+function calculateInvestment(initialInvestment,monthlyInvestment,rate,years) {
   const months = Math.max(0, Math.round(years * 12));
   const monthlyRate = rate / 100 / 12;
-
   let balance = initialInvestment;
   let totalContributions = initialInvestment;
-
   const yearlyData = [];
-
   for (let month = 1; month <= months; month++) {
     balance += monthlyInvestment;
     totalContributions += monthlyInvestment;
-
     balance *= 1 + monthlyRate;
-
     if (month % 12 === 0 || month === months) {
       yearlyData.push({
         year: Math.ceil(month / 12),
@@ -82,22 +72,15 @@ function calculateInvestment(
     yearlyData,
   };
 }
-
-/* -------------------------------------------------------
-   DEBT CALCULATOR
-------------------------------------------------------- */
-
+// debt calculator
 function calculateDebt(debt, annualRate, monthlyPayment) {
   let balance = debt;
   let totalInterest = 0;
   let totalPaid = 0;
   let months = 0;
-
   const monthlyRate = annualRate / 100 / 12;
   const payment = monthlyPayment;
-
   const monthlyData = [];
-
   if (balance <= 0) {
     return {
       months: 0,
@@ -123,20 +106,15 @@ function calculateDebt(debt, annualRate, monthlyPayment) {
 
   while (balance > 0 && months < 1200) {
     months++;
-
     const interest = balance * monthlyRate;
     totalInterest += interest;
-
     const principal = Math.min(
       Math.max(payment - interest, 0),
       balance
-    );
-
+    )
     const actualPayment = principal + interest;
-
     balance -= principal;
     totalPaid += actualPayment;
-
     monthlyData.push({
       month: months,
       balance: Math.max(balance, 0),
@@ -154,10 +132,7 @@ function calculateDebt(debt, annualRate, monthlyPayment) {
   };
 }
 
-/* -------------------------------------------------------
-   SIMPLE CHART
-------------------------------------------------------- */
-
+// the growth chart
 function GrowthChart({ data, type = "balance" }) {
   if (!data || data.length === 0) {
     return (
@@ -167,106 +142,41 @@ function GrowthChart({ data, type = "balance" }) {
     );
   }
 
-  const values = data.map((item) =>
-    type === "debt"
-      ? item.balance
-      : item.balance
-  );
-
-  const contributions = data.map((item) =>
-    item.contributions || 0
-  );
-
+  const values = data.map((item) => type === "debt"? item.balance: item.balance)
+  const contributions = data.map((item) =>item.contributions || 0)
   const maxValue = Math.max(...values, ...contributions, 1);
-
   const width = 700;
   const height = 280;
   const padding = 35;
-
   const createPoints = (items, valueKey) => {
     return items
       .map((item, index) => {
         const value = item[valueKey] || 0;
 
-        const x =
-          padding +
-          (index / Math.max(items.length - 1, 1)) *
-            (width - padding * 2);
-
-        const y =
-          height -
-          padding -
-          (value / maxValue) *
-            (height - padding * 2);
-
+        const x = padding + (index / Math.max(items.length - 1, 1)) *(width - padding * 2);
+        const y = height - padding - (value / maxValue) *(height - padding * 2);
         return `${x},${y}`;
       })
-      .join(" ");
-  };
-
+      .join(" ")
+  }
   const balancePoints = createPoints(data, "balance");
-
   return (
     <div className="sim-chart-wrapper">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="sim-chart"
-        role="img"
-        aria-label="Financial growth chart"
-      >
-        <line
-          x1={padding}
-          y1={height - padding}
-          x2={width - padding}
-          y2={height - padding}
-          className="chart-axis"
-        />
-
-        <line
-          x1={padding}
-          y1={padding}
-          x2={padding}
-          y2={height - padding}
-          className="chart-axis"
-        />
-
-        <polyline
-          points={balancePoints}
-          className="chart-line"
-          fill="none"
-        />
-
-        {type !== "debt" && (
-          <polyline
-            points={createPoints(data, "contributions")}
-            className="chart-line-secondary"
-            fill="none"
-          />
-        )}
-
+      <svg viewBox={`0 0 ${width} ${height}`} className="sim-chart" role="img" aria-label="Financial growth chart">
+        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="chart-axis"/>
+        <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="chart-axis" />
+        <polyline points={balancePoints} className="chart-line" fill="none"/>
+        {/* {type !== "debt" && (
+          <polyline points={createPoints(data, "contributions")} className="chart-line-secondary" fill="none"/>
+        )} */}
         {data.map((item, index) => {
           const value = item.balance || 0;
-
-          const x =
-            padding +
-            (index / Math.max(data.length - 1, 1)) *
-              (width - padding * 2);
-
-          const y =
-            height -
-            padding -
-            (value / maxValue) *
-              (height - padding * 2);
+          const x =padding +(index / Math.max(data.length - 1, 1)) *(width - padding * 2);
+          const y = height - padding - (value / maxValue) *(height - padding * 2);
 
           return (
-            <circle
-              key={`${item.year || item.month}-${index}`}
-              cx={x}
-              cy={y}
-              r="4"
-              className="chart-point"
-            />
-          );
+            <circle key={`${item.year || item.month}-${index}`} cx={x} cy={y} r="4" className="chart-point"/>
+          )
         })}
       </svg>
 
@@ -276,66 +186,33 @@ function GrowthChart({ data, type = "balance" }) {
         </span>
 
         <span>
-          {type === "debt"
-            ? "Debt repayment"
-            : "Future value"}
+          {type === "debt" ? "Debt repayment" : "Future value"}
         </span>
       </div>
     </div>
   );
 }
 
-/* -------------------------------------------------------
-   MAIN COMPONENT
-------------------------------------------------------- */
-
+// the calculatiosn
 function FinancialSimulators() {
-  const navigate = useNavigate();
-
-  const [activeSimulator, setActiveSimulator] =
-    useState("savings");
-
+  // const navigate = useNavigate();
+  const [activeSimulator, setActiveSimulator] =useState("savings");
   /* Savings */
-  const [startingAmount, setStartingAmount] =
-    useState(2000);
-
-  const [monthlySavings, setMonthlySavings] =
-    useState(1000);
-
-  const [savingsRate, setSavingsRate] =
-    useState(5);
-
-  const [savingsYears, setSavingsYears] =
-    useState(3);
-
+  const [startingAmount, setStartingAmount] =useState();
+  const [monthlySavings, setMonthlySavings] =useState();
+  const [savingsRate, setSavingsRate] =useState();
+  const [savingsYears, setSavingsYears] =useState();
   /* Investment */
-  const [initialInvestment, setInitialInvestment] =
-    useState(5000);
-
-  const [monthlyInvestment, setMonthlyInvestment] =
-    useState(1000);
-
-  const [investmentRate, setInvestmentRate] =
-    useState(8);
-
-  const [investmentYears, setInvestmentYears] =
-    useState(10);
-
+  const [initialInvestment, setInitialInvestment] =useState();
+  const [monthlyInvestment, setMonthlyInvestment] =useState();
+  const [investmentRate, setInvestmentRate] =useState();
+  const [investmentYears, setInvestmentYears] =useState();
   /* Debt */
-  const [debtAmount, setDebtAmount] =
-    useState(20000);
-
-  const [debtRate, setDebtRate] =
-    useState(18);
-
-  const [monthlyPayment, setMonthlyPayment] =
-    useState(1000);
-
+  const [debtAmount, setDebtAmount] =useState();
+  const [debtRate, setDebtRate] =useState();
+  const [monthlyPayment, setMonthlyPayment] =useState();
   /* Calculations */
-
-  const savingsResult = useMemo(
-    () =>
-      calculateSavings(
+  const savingsResult = useMemo(() =>calculateSavings(
         clampNumber(startingAmount),
         clampNumber(monthlySavings),
         clampNumber(savingsRate),
@@ -347,11 +224,9 @@ function FinancialSimulators() {
       savingsRate,
       savingsYears,
     ]
-  );
+  )
 
-  const investmentResult = useMemo(
-    () =>
-      calculateInvestment(
+  const investmentResult = useMemo(() => calculateInvestment(
         clampNumber(initialInvestment),
         clampNumber(monthlyInvestment),
         clampNumber(investmentRate),
@@ -365,9 +240,7 @@ function FinancialSimulators() {
     ]
   );
 
-  const debtResult = useMemo(
-    () =>
-      calculateDebt(
+  const debtResult = useMemo(() =>calculateDebt(
         clampNumber(debtAmount),
         clampNumber(debtRate),
         clampNumber(monthlyPayment)
@@ -375,38 +248,22 @@ function FinancialSimulators() {
     [debtAmount, debtRate, monthlyPayment]
   );
 
-  /* Scenario comparison */
-  const scenarioB = useMemo(
-    () =>
-      calculateDebt(
+// for the debt calculatoins
+  const scenarioB = useMemo( () =>calculateDebt(
         clampNumber(debtAmount),
         clampNumber(debtRate),
         clampNumber(monthlyPayment) + 500
       ),
     [debtAmount, debtRate, monthlyPayment]
-  );
-
-  const interestSaved = Math.max(
-    0,
-    debtResult.totalInterest - scenarioB.totalInterest
-  );
-
-  const monthsSaved = Math.max(
-    0,
-    debtResult.months - scenarioB.months
-  );
-
+  )
+  const interestSaved = Math.max( 0,debtResult.totalInterest - scenarioB.totalInterest)
+  const monthsSaved = Math.max(0,debtResult.months - scenarioB.months)
   const renderSavings = () => (
     <>
       <div className="simulator-heading">
-        <div>
-          <span className="simulator-icon">💰</span>
-          <div>
+        <div><span className="simulator-icon">💰</span><div>
             <h2>Savings Calculator</h2>
-            <p>
-              See how regular saving and compound interest
-              could grow your money over time.
-            </p>
+            <p> See how regular saving and compound interest could grow your money over time.</p>
           </div>
         </div>
       </div>
@@ -929,25 +786,17 @@ function FinancialSimulators() {
       <main className="financial-simulators">
         <div className="simulator-container">
 
-          <button
+          {/* <button
             className="back-button"
             onClick={() => navigate("/dashboard")}
           >
             ← Back to Dashboard
-          </button>
+          </button> */}
 
           <header className="page-header">
-            <span className="page-eyebrow">
-              INTERACTIVE LEARNING
-            </span>
-
+            <span className="page-eyebrow">INTERACTIVE LEARNING</span>
             <h1>Financial Simulators</h1>
-
-            <p>
-              Experiment with your money. Change the
-              numbers and see how different financial
-              decisions could affect your future.
-            </p>
+            <p> Experiment with your money. Change the numbers and see how different financial decisions could affect your future </p>
           </header>
 
           <div className="simulator-tabs">
