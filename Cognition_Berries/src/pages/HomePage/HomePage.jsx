@@ -135,18 +135,18 @@ const HomePage = () => {
           <Link to="/financial-simulators" className="reason-blk">
             <p>💡</p>
             <h3>Financial Simulator</h3>
-            <p>Calculate your interests, investements and also your debts</p>
+            <p>Click here to calculate your interests, investements and also your debts</p>
           </Link>
           {/* <div className="reason-blk">
             <p>🕹️</p>
             <h3> Personalized Learning</h3>
             <p>Start my learning path</p>
           </div> */}
-          <div className="reason-blk">
+          <Link className="reason-blk">
             <p>👨‍🏫</p>
             <h3>AI Financial Tutor</h3>
-            <p>Get one-on-one guidance from financial ai bot. <br/> Ask, Learn and Practice</p>
-          </div>
+            <p>Click here to get guidance from our financial ai bot. <br/> Ask, Learn and Practice</p>
+          </Link>
         </div>
       </section>
 
@@ -193,4 +193,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomePage

@@ -257,12 +257,12 @@
   background: linear-gradient(145deg, white, var(--neutral-cream));
   padding: 2.5rem var(--spacing-xl);
   border-radius: 1.5rem;
-  border: 2px solid var(--neutral-light);
+  border: 2px solid #c42d6a;
   transition: var(--transition);
   position: relative;
   overflow: hidden;
   text-align: center;
-    text-decoration: none;
+  text-decoration: none;
   color: inherit;
   cursor: pointer;
 }

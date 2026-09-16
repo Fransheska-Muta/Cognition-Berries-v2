@@ -261,7 +261,7 @@ function FinancialSimulators() {
   const renderSavings = () => (
     <>
       <div className="simulator-heading">
-        <div><span className="simulator-icon">💰</span><div>
+        <div><span className="simulator-icon"></span><div>
             <h2>Savings Calculator</h2>
             <p> See how regular saving and compound interest could grow your money over time.</p>
           </div>
@@ -400,7 +400,7 @@ function FinancialSimulators() {
     <>
       <div className="simulator-heading">
         <div>
-          <span className="simulator-icon">📈</span>
+          {/* <span className="simulator-icon">📈</span> */}
           <div>
             <h2>Investment Calculator</h2>
             <p>
@@ -535,7 +535,7 @@ function FinancialSimulators() {
       </div>
 
       <div className="warning-box">
-        <span>⚠️</span>
+        {/* <span>⚠️</span> */}
         <div>
           <strong>Important</strong>
           <p>
@@ -553,7 +553,7 @@ function FinancialSimulators() {
     <>
       <div className="simulator-heading">
         <div>
-          <span className="simulator-icon">💳</span>
+          {/* <span className="simulator-icon">💳</span> */}
           <div>
             <h2>Debt Repayment Tool</h2>
             <p>
@@ -754,7 +754,7 @@ function FinancialSimulators() {
           </div>
 
           <div className="saving-highlight">
-            <span>🎯</span>
+            {/* <span>🎯</span> */}
 
             <div>
               <strong>
@@ -800,43 +800,28 @@ function FinancialSimulators() {
           </header>
 
           <div className="simulator-tabs">
-            <button
-              className={
-                activeSimulator === "savings"
-                  ? "active"
-                  : ""
-              }
+            <button className={activeSimulator === "savings"? "active": ""}
               onClick={() =>
                 setActiveSimulator("savings")
               }
             >
-              💰 Savings
+              Savings
             </button>
 
-            <button
-              className={
-                activeSimulator === "investment"
-                  ? "active"
-                  : ""
-              }
+            <button className={activeSimulator === "investment"? "active": ""}
               onClick={() =>
                 setActiveSimulator("investment")
               }
             >
-              📈 Investment
+             Investment
             </button>
 
-            <button
-              className={
-                activeSimulator === "debt"
-                  ? "active"
-                  : ""
-              }
+            <button className={ activeSimulator === "debt"? "active": ""}
               onClick={() =>
                 setActiveSimulator("debt")
               }
             >
-              💳 Debtf
+               Debts
             </button>
           </div>
 
