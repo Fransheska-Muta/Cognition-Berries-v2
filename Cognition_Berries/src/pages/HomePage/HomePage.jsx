@@ -195,8 +195,8 @@ const HomePage = () => {
       </section>
 
       <Footer />
-      <AiTutorModal isOpen={showTutor} onClose={() => setShowTutor(false)} />
-    </div>
+<AiTutorModal isOpen={showTutor} onClose={() => setShowTutor(false)} />    
+</div>
   );
 };
 

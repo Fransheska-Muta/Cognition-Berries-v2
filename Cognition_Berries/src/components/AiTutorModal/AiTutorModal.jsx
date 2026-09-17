@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiRequest } from '../../config/api';
 import './AiTutorModal.css';
 
@@ -8,6 +8,15 @@ const AiTutorModal = ({ isOpen, onClose }) => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+
+  // FIX: whenever a new message is added (or the typing indicator
+  // appears/disappears), scroll the messages list down so the newest
+  // bubble — however long — is fully in view instead of sitting
+  // below the fold looking "cut off".
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages, loading]);
 
   if (!isOpen) return null;
 
@@ -68,6 +77,7 @@ const AiTutorModal = ({ isOpen, onClose }) => {
               <span></span><span></span><span></span>
             </div>
           )}
+          <div ref={bottomRef} />
         </div>
 
         <div className="tutor-composer">
