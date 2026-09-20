@@ -91,10 +91,7 @@ function calculateDebt(debt, annualRate, monthlyPayment) {
     };
   }
 
-  if (
-    monthlyRate > 0 &&
-    payment <= balance * monthlyRate
-  ) {
+  if ( monthlyRate > 0 && payment <= balance * monthlyRate ) {
     return {
       months: 0,
       totalInterest: 0,
@@ -105,13 +102,10 @@ function calculateDebt(debt, annualRate, monthlyPayment) {
   }
 
   while (balance > 0 && months < 1200) {
-    months++;
+    months++
     const interest = balance * monthlyRate;
     totalInterest += interest;
-    const principal = Math.min(
-      Math.max(payment - interest, 0),
-      balance
-    )
+    const principal = Math.min( Math.max(payment - interest, 0), balance)
     const actualPayment = principal + interest;
     balance -= principal;
     totalPaid += actualPayment;
@@ -777,7 +771,7 @@ function FinancialSimulators() {
         </>
       )}
     </>
-  );
+  )
 
   return (
     <>
