@@ -23,6 +23,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const Base_API = process.env.VITE_BASE_API || "52.44.223.219";
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+const client = new MongoClient(process.env.MONGO_URI);
 const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
 
 // ======================= Security Middleware =======================
