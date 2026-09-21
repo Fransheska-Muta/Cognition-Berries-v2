@@ -1,5 +1,5 @@
 .financial-simulators {
-  border: 7px solid red;
+  /* border: 7px solid red; */
   min-height: 100vh;
   background: #f5f3fa;
   padding: 40px;
@@ -8,7 +8,7 @@
 }
 
 .simulator-container {
-  border: 7px solid red;
+  /* border: 7px solid red; */
   /* max-width: 100%; */
   margin: 0 auto;
 }
@@ -57,7 +57,7 @@
 /* Tabs */
 
 .simulator-tabs {
-  border: 7px solid red;
+  /* border: 7px solid red; */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;

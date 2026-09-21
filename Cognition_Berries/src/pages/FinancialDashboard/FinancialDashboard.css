@@ -269,7 +269,7 @@ div[style*="borderBottom"]:hover {
 }
 
 .recommended-content {
-    display: flex;
+    display: grid;
     gap: 20px;
     align-items: center;
 }
