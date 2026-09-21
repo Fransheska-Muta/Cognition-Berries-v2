@@ -1,4 +1,6 @@
 const dotenv = require("dotenv");
+console.log("SERVER.JS STARTED");
+console.log("MAIN CHECK:", require.main === module);
 require("dotenv").config();
 
 dotenv.config();
@@ -153,21 +155,6 @@ async function connectToMongo() {  /*
     throw err;
   }
 }
-
-// Connect immediately if not in test mode
-if (process.env.NODE_ENV !== 'test') {
-  connectToMongo().then(() => {
-    // Only restore reminders after DB connection is established
-    restoreScheduledReminders();
-  }).catch(err => {
-    console.error('Failed to initialize server:', err);
-    process.exit(1);
-  });
-}
-if (process.env.NODE_ENV !== 'test') {
-  connectToMongo();
-}
-
 function restoreScheduledReminders() {
   console.log("⏰ Restoring scheduled reminders from DB...");
 }
@@ -324,7 +311,7 @@ async function requireAuth(req, res, next) {
       detail: err.message,
     });
   }
-
+}
 // Optional middleware for admin-only routes
 async function requireAdmin(req, res, next) {
   try {
@@ -2010,6 +1997,7 @@ If the user asks something unrelated to financial education, politely explain th
     console.log(
       `⚠️ Model ${model} is unavailable.`
     );
+console.log("CHECKPOINT 2000");
   }
 
   throw lastError;
@@ -2872,6 +2860,7 @@ async function restoreScheduledReminders() {
 }
 
 module.exports = { restoreScheduledReminders };
+console.log("CHECKPOINT 2862");
 
 
 // ----------------------- Material Books Management -----------------------
@@ -3010,6 +2999,7 @@ app.post("/material-books/:id/image",
       const result = await db.collection("images").insertOne(imageDoc);
       
       // Update book with new image reference
+console.log("CHECKPOINT 3000");
       await db.collection("material-books").updateOne(
         {
           $or: [
@@ -3959,7 +3949,9 @@ app.use((err, req, res, next) => {
 });
 
 // ----------------------- Server Start -----------------------
+console.log("REACHED SERVER START");
 // Only start the server when this file is executed directly.
+console.log("START CHECK:", require.main === module, "NODE_ENV:", process.env.NODE_ENV);
 if (require.main === module && process.env.NODE_ENV !== "test") {
   connectToMongo()
     .then(async () => {
@@ -4040,4 +4032,4 @@ function resolveIdParam(param) {
   }
 
   return null;
-}}
+}
