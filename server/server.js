@@ -27,6 +27,336 @@ const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
 
 // ======================= Security Middleware =======================
 
+function getPersonalFinanceModules() {
+    return [
+        {
+            id: "budgeting-basics",
+            title: "1. Budgeting Basics",
+            lessons: [
+                {
+                    id: "what-is-a-budget",
+                    title: "What Is a Budget?",
+                    type: "study",
+                    description:
+                        "Learn what a budget is and why it is useful.",
+                    content:
+                        "A budget is a simple plan for how you will use your money. It helps you understand what money comes in, what money goes out, and how much you can save.",
+                    steps: [
+                        {
+                            title: "Understand your income",
+                            text: "Identify the money you expect to receive."
+                        },
+                        {
+                            title: "List your expenses",
+                            text: "Write down the things you normally spend money on."
+                        },
+                        {
+                            title: "Create a plan",
+                            text: "Decide how much money should go toward needs, wants and savings."
+                        }
+                    ],
+                    videoUrl:
+                        "https://www.youtube.com/results?search_query=budgeting+basics+for+beginners"
+                },
+
+                {
+                    id: "needs-vs-wants",
+                    title: "Needs vs Wants",
+                    type: "study",
+                    description:
+                        "Learn how to tell the difference between needs and wants.",
+                    content:
+                        "Needs are things that are important for everyday life. Wants are things that are enjoyable but usually not essential. Understanding the difference can help you make better spending decisions.",
+                    steps: [
+                        {
+                            title: "Identify needs",
+                            text: "Think about things that are necessary."
+                        },
+                        {
+                            title: "Identify wants",
+                            text: "Think about things you would like but can live without."
+                        },
+                        {
+                            title: "Make better choices",
+                            text: "Prioritize needs before wants when planning your spending."
+                        }
+                    ],
+                    videoUrl:
+                        "https://www.youtube.com/results?search_query=needs+vs+wants+budgeting"
+                },
+
+                {
+                    id: "budgeting-checkpoint",
+                    title: "Budgeting Checkpoint Quiz",
+                    type: "quiz",
+                    quiz: {
+                        passingScore: 70,
+                        questions: [
+                            {
+                                id: "budget-q1",
+                                text: "What is a budget?",
+                                answers: [
+                                    "A plan for your money",
+                                    "A type of bank",
+                                    "A shopping list",
+                                    "A loan"
+                                ],
+                                correctAnswer: 0
+                            },
+                            {
+                                id: "budget-q2",
+                                text: "Which is usually a need?",
+                                answers: [
+                                    "A new video game",
+                                    "Basic food",
+                                    "A luxury watch",
+                                    "A new gaming console"
+                                ],
+                                correctAnswer: 1
+                            },
+                            {
+                                id: "budget-q3",
+                                text: "Why can a budget be useful?",
+                                answers: [
+                                    "It helps plan spending",
+                                    "It guarantees you become rich",
+                                    "It removes all expenses",
+                                    "It gives unlimited money"
+                                ],
+                                correctAnswer: 0
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            id: "saving-money",
+            title: "2. Saving Money",
+            lessons: [
+                {
+                    id: "setting-savings-goal",
+                    title: "Setting a Savings Goal",
+                    type: "study",
+                    description:
+                        "Learn how to create a realistic savings goal.",
+                    content:
+                        "A savings goal gives your money a purpose. A good goal can be specific, measurable and realistic.",
+                    steps: [
+                        {
+                            title: "Choose a goal",
+                            text: "Decide what you are saving for."
+                        },
+                        {
+                            title: "Choose an amount",
+                            text: "Estimate how much you need."
+                        },
+                        {
+                            title: "Make a plan",
+                            text: "Decide how much you can save regularly."
+                        }
+                    ],
+                    videoUrl:
+                        "https://www.youtube.com/results?search_query=how+to+set+savings+goals"
+                },
+
+                {
+                    id: "emergency-savings",
+                    title: "Emergency Savings",
+                    type: "study",
+                    description:
+                        "Understand why people keep money available for unexpected expenses.",
+                    content:
+                        "Emergency savings can help people handle unexpected costs without immediately needing to borrow money.",
+                    steps: [
+                        {
+                            title: "Understand emergencies",
+                            text: "Think about unexpected costs that could happen."
+                        },
+                        {
+                            title: "Set a target",
+                            text: "Choose an amount that makes sense for your situation."
+                        },
+                        {
+                            title: "Save consistently",
+                            text: "Add money regularly when possible."
+                        }
+                    ],
+                    videoUrl:
+                        "https://www.youtube.com/results?search_query=emergency+savings+explained"
+                },
+
+                {
+                    id: "saving-money-quiz",
+                    title: "Saving Money Quiz",
+                    type: "quiz",
+                    quiz: {
+                        passingScore: 70,
+                        questions: [
+                            {
+                                id: "saving-q1",
+                                text: "What is a savings goal?",
+                                answers: [
+                                    "A target for money you want to save",
+                                    "A type of credit card",
+                                    "A shopping receipt",
+                                    "A bank password"
+                                ],
+                                correctAnswer: 0
+                            },
+                            {
+                                id: "saving-q2",
+                                text: "Why can emergency savings be useful?",
+                                answers: [
+                                    "For unexpected expenses",
+                                    "To spend everything immediately",
+                                    "To avoid making a budget",
+                                    "To guarantee investment returns"
+                                ],
+                                correctAnswer: 0
+                            },
+                            {
+                                id: "saving-q3",
+                                text: "What can help you reach a savings goal?",
+                                answers: [
+                                    "Saving consistently",
+                                    "Ignoring your spending",
+                                    "Spending all your money",
+                                    "Having no goal"
+                                ],
+                                correctAnswer: 0
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            id: "investing-foundations",
+            title: "3. Investing Foundations",
+            lessons: [
+                {
+                    id: "what-is-investing",
+                    title: "What Is Investing?",
+                    type: "study",
+                    description:
+                        "Learn the basic idea behind investing.",
+                    content:
+                        "Investing means putting money into an asset with the hope that it may grow in value or produce income over time. Investments can also lose value, so learning about risk is important.",
+                    steps: [
+                        {
+                            title: "Learn the concept",
+                            text: "Understand that investing is different from simply keeping money in cash."
+                        },
+                        {
+                            title: "Understand risk",
+                            text: "Different investments have different levels of risk."
+                        },
+                        {
+                            title: "Think long term",
+                            text: "Many investing strategies focus on long-term goals."
+                        }
+                    ],
+                    videoUrl:
+                        "https://www.youtube.com/results?search_query=investing+basics+for+beginners"
+                },
+
+                {
+                    id: "investing-foundations-quiz",
+                    title: "Investing Foundations Quiz",
+                    type: "quiz",
+                    quiz: {
+                        passingScore: 70,
+                        questions: [
+                            {
+                                id: "invest-q1",
+                                text: "What does investing involve?",
+                                answers: [
+                                    "Putting money into assets with potential growth or income",
+                                    "Guaranteeing a profit",
+                                    "Avoiding all financial decisions",
+                                    "Spending money immediately"
+                                ],
+                                correctAnswer: 0
+                            },
+                            {
+                                id: "invest-q2",
+                                text: "Can investments lose value?",
+                                answers: [
+                                    "Yes",
+                                    "No",
+                                    "Only on weekends",
+                                    "Never"
+                                ],
+                                correctAnswer: 0
+                            },
+                            {
+                                id: "invest-q3",
+                                text: "Why is understanding risk important?",
+                                answers: [
+                                    "Different investments have different risks",
+                                    "Risk never matters",
+                                    "All investments are guaranteed",
+                                    "Risk determines your password"
+                                ],
+                                correctAnswer: 0
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ];
+}
+
+function getCourseModules(course) {
+    if (course?.modules && course.modules.length > 0) {
+        return course.modules;
+    }
+
+    const title =
+        String(course?.title || "").toLowerCase();
+
+    const category =
+        String(course?.category || "").toLowerCase();
+
+    if (
+        title.includes("personal finance") ||
+        category.includes("personal finance")
+    ) {
+        return getPersonalFinanceModules();
+    }
+
+    return [];
+}
+
+function getCourseModules(course) {
+  if (
+    course?.modules &&
+    Array.isArray(course.modules) &&
+    course.modules.length > 0
+  ) {
+    return course.modules;
+  }
+
+  const title =
+    String(course?.title || "").toLowerCase();
+
+  const category =
+    String(course?.category || "").toLowerCase();
+
+  if (
+    title.includes("personal finance") ||
+    category.includes("personal finance")
+  ) {
+    return getPersonalFinanceModules();
+  }
+
+  return [];
+}
+
 // Helmet for security headers
 app.use(helmet({
   contentSecurityPolicy: {
@@ -1036,59 +1366,122 @@ app.delete("/courses/:id", requireAuth, requireAdmin, async (req, res) => {
 // ----------------------- Progress Tracking System -----------------------
 
 // Helper: Calculate course completion percentage
-async function calculateProgressPercentage(courseId, completedLessons) {
+async function calculateProgressPercentage(
+  courseId,
+  completedLessons
+) {
   try {
-    const course = await db.collection("material-courses").findOne({
-      $or: [
-        { course_id: courseId },
-        { _id: ObjectId.isValid(courseId) ? new ObjectId(courseId) : null }
-      ]
-    });
+    let course = null;
 
-    if (!course || !course.modules) return 0;
+    if (ObjectId.isValid(courseId)) {
+      course = await db
+        .collection("material-courses")
+        .findOne({
+          _id: new ObjectId(courseId)
+        });
+    }
 
-    const totalLessons = course.modules.reduce((sum, module) => 
-      sum + (module.lessons?.length || 0), 0);
+    if (!course) {
+      course = await db
+        .collection("material-courses")
+        .findOne({
+          course_id: courseId
+        });
+    }
 
-    if (totalLessons === 0) return 0;
+    if (!course) {
+      return 0;
+    }
 
-    return Math.round((completedLessons.length / totalLessons) * 100);
-  } catch (err) {
-    console.error("Error calculating progress:", err);
+    const modules =
+      getCourseModules(course);
+
+    const totalLessons =
+      modules.reduce(
+        (total, module) =>
+          total +
+          (module.lessons?.length || 0),
+        0
+      );
+
+    if (totalLessons === 0) {
+      return 0;
+    }
+
+    return Math.round(
+      (completedLessons.length /
+        totalLessons) *
+        100
+    );
+  } catch (error) {
+    console.error(
+      "Error calculating progress:",
+      error
+    );
+
     return 0;
   }
 }
 
 // Helper: Get next lesson
-async function getNextLesson(courseId, completedLessons) {
+async function getNextLesson(
+  courseId,
+  completedLessons
+) {
   try {
-    const course = await db.collection("material-courses").findOne({
-      $or: [
-        { course_id: courseId },
-        { _id: ObjectId.isValid(courseId) ? new ObjectId(courseId) : null }
-      ]
-    });
+    let course = null;
 
-    if (!course || !course.modules) return null;
+    if (ObjectId.isValid(courseId)) {
+      course = await db
+        .collection("material-courses")
+        .findOne({
+          _id: new ObjectId(courseId)
+        });
+    }
 
-    const allLessons = course.modules.flatMap(module => 
-      (module.lessons || []).map(lesson => ({
-        ...lesson,
-        moduleId: module.id,
-        moduleTitle: module.title
-      }))
-    );
+    if (!course) {
+      course = await db
+        .collection("material-courses")
+        .findOne({
+          course_id: courseId
+        });
+    }
 
-    // Find first incomplete lesson
-    for (const lesson of allLessons) {
-      if (!completedLessons.includes(lesson.id)) {
-        return lesson;
+    if (!course) {
+      return null;
+    }
+
+    const modules =
+      getCourseModules(course);
+
+    for (const module of modules) {
+      for (const lesson of module.lessons || []) {
+        const lessonId =
+          lesson.id ||
+          lesson.lessonId;
+
+        if (
+          lessonId &&
+          !completedLessons.includes(lessonId)
+        ) {
+          return {
+            ...lesson,
+            moduleTitle:
+              module.title ||
+              module.name ||
+              ""
+          };
+        }
       }
     }
 
-    return null; // All lessons completed
-  } catch (err) {
-    console.error("Error getting next lesson:", err);
+    return null;
+  } catch (error) {
+    console.error(
+      "Error getting next lesson:",
+      error
+    );
+
     return null;
   }
 }

@@ -1,428 +1,625 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { apiRequest } from "../../config/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import LessonList from "../LessionLIst/LessionLIst";
+// import QuizRenderer from "../../../components/QuizRenderer/QuizRenderer";
+// import VideoPlayer from "../../../components/VideoPlayer/VideoPlayer";
+// import { apiRequest } from "../../../
 import { useProgress } from "../../hooks/useProgress";
 import { useLessonCompletion } from "../../hooks/useLessonCompletion";
-import Navbar from "../../components/Navbar/Navbar";
-import ProgressBar from "../../components/Progress/ProgressBar";
-import LessonList from "../../components/Progress/LessonList";
-import VideoPlayer from "../../components/Progress/VideoPlayer";
-import QuizRenderer from "../../components/Progress/QuizRenderer";
-import "./CourseLearning.css";
+// import "./CourseLearning.css";
 
 function CourseLearning() {
-  const { courseId } = useParams();
-  const navigate = useNavigate();
-  
-  const [course, setCourse] = useState(null);
-  const [currentLesson, setCurrentLesson] = useState(null);
-  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showNotes, setShowNotes] = useState(false);
-  const [notes, setNotes] = useState("");
+    const { courseId } = useParams();
+    const navigate = useNavigate();
 
-  // Get current user
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await apiRequest('/me');
-        const userData = await response.json();
-        setUser(userData);
-      } catch (err) {
-        console.error('Error fetching user:', err);
-      }
-    };
-    fetchUser();
-  }, []);
+    const [user, setUser] = useState(null);
+    const [course, setCourse] = useState(null);
+    const [currentLesson, setCurrentLesson] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [notes, setNotes] = useState("");
 
-  // Progress tracking hook
-  const { 
-    progress, 
-    loading: progressLoading,
-    updateProgress,
-    refetch: refetchProgress
-  } = useProgress(courseId, user?.uid);
+    const { progress, refetch: refetchProgress } = useProgress(
+        courseId,
+        user?.uid
+    );
 
-  // Lesson completion hook
-  const { completeLesson, completing } = useLessonCompletion(courseId, (data) => {
-    alert(`✓ Lesson completed! ${data.percentComplete}% course complete`);
-    refetchProgress();
-  });
+    const handleProgressUpdate = useCallback(() => {
+        refetchProgress();
+    }, [refetchProgress]);
 
-  // Fetch course data
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        setLoading(true);
-        const response = await apiRequest(`/courses/${courseId}`);
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch course");
+    const { completeLesson, completing } = useLessonCompletion(
+        courseId,
+        handleProgressUpdate
+    );
+
+    useEffect(() => {
+        async function loadUser() {
+            try {
+                const response = await apiRequest("/me");
+                setUser(response);
+            } catch (err) {
+                console.error("Could not load user:", err);
+            }
         }
-        
-        const courseData = await response.json();
-        setCourse(courseData);
-      } catch (error) {
-        console.error("Error loading course:", error);
-        alert("Failed to load course. Please try again.");
-        navigate("/courses");
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    if (courseId) {
-      fetchCourse();
-    }
-  }, [courseId, navigate]);
+        loadUser();
+    }, []);
 
-  // Set current lesson based on progress
-  useEffect(() => {
-    if (course && progress) {
-      const allLessons = getAllLessons();
-      
-      // If there's a last opened lesson, start there
-      if (progress.lastOpenedLesson) {
-        const lessonIndex = allLessons.findIndex(
-          l => l.id === progress.lastOpenedLesson
+    useEffect(() => {
+        async function loadCourse() {
+            if (!courseId) return;
+
+            try {
+                setLoading(true);
+                setError("");
+
+                const response = await apiRequest(`/courses/${courseId}`);
+                setCourse(response);
+            } catch (err) {
+                console.error("Could not load course:", err);
+                setError("Could not load this course.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadCourse();
+    }, [courseId]);
+
+    const lessons = useMemo(() => {
+        if (!course) return [];
+
+        const modules = course.modules || [];
+
+        return modules.flatMap((module, moduleIndex) =>
+            (module.lessons || []).map((lesson, lessonIndex) => ({
+                ...lesson,
+                id: lesson.id || lesson.lessonId || `${moduleIndex}-${lessonIndex}`,
+                moduleTitle:
+                    module.title ||
+                    module.name ||
+                    `Module ${moduleIndex + 1}`,
+            }))
         );
-        if (lessonIndex !== -1) {
-          setCurrentLessonIndex(lessonIndex);
-          setCurrentLesson(allLessons[lessonIndex]);
-          return;
+    }, [course]);
+
+    useEffect(() => {
+        if (!lessons.length) return;
+
+        const completedLessons = progress?.completedLessons || [];
+
+        let selectedLesson = null;
+
+        if (progress?.lastOpenedLesson) {
+            selectedLesson = lessons.find(
+                (lesson) => lesson.id === progress.lastOpenedLesson
+            );
         }
-      }
 
-      // Otherwise, find first incomplete lesson
-      const firstIncomplete = allLessons.findIndex(
-        l => !progress.completedLessons.includes(l.id)
-      );
+        if (!selectedLesson) {
+            selectedLesson = lessons.find(
+                (lesson) => !completedLessons.includes(lesson.id)
+            );
+        }
 
-      if (firstIncomplete !== -1) {
-        setCurrentLessonIndex(firstIncomplete);
-        setCurrentLesson(allLessons[firstIncomplete]);
-      } else if (allLessons.length > 0) {
-        // All complete, start at beginning
-        setCurrentLessonIndex(0);
-        setCurrentLesson(allLessons[0]);
-      }
-    }
-  }, [course, progress]);
+        if (!selectedLesson) {
+            selectedLesson = lessons[lessons.length - 1];
+        }
 
-  // Load notes for current lesson
-  useEffect(() => {
-    if (currentLesson) {
-      const savedNotes = localStorage.getItem(
-        `course_${courseId}_lesson_${currentLesson.id}_notes`
-      );
-      setNotes(savedNotes || "");
+        setCurrentLesson(selectedLesson);
+    }, [lessons, progress]);
 
-      // Update last opened lesson
-      if (progress && currentLesson.id !== progress.lastOpenedLesson) {
-        updateProgress({ lastOpenedLesson: currentLesson.id });
-      }
-    }
-  }, [currentLesson, courseId, progress, updateProgress]);
+    useEffect(() => {
+        if (!currentLesson || !courseId) return;
 
-  const getAllLessons = () => {
-    if (!course || !course.modules) return [];
-    
-    return course.modules.flatMap(module => 
-      (module.lessons || []).map(lesson => ({
-        ...lesson,
-        moduleTitle: module.title,
-        moduleId: module.id
-      }))
-    );
-  };
+        const savedNotes = localStorage.getItem(
+            `notes-${courseId}-${currentLesson.id}`
+        );
 
-  const allLessons = getAllLessons();
+        setNotes(savedNotes || "");
 
-  const goToLesson = (lesson) => {
-    const index = allLessons.findIndex(l => l.id === lesson.id);
-    if (index !== -1) {
-      setCurrentLessonIndex(index);
-      setCurrentLesson(lesson);
-    }
-  };
+        apiRequest("/progress/update", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                courseId,
+                lastOpenedLesson: currentLesson.id,
+            }),
+        }).catch(() => {});
+    }, [currentLesson, courseId]);
 
-  const goToNextLesson = () => {
-    if (currentLessonIndex < allLessons.length - 1) {
-      const nextIndex = currentLessonIndex + 1;
-      setCurrentLessonIndex(nextIndex);
-      setCurrentLesson(allLessons[nextIndex]);
-    } else {
-      alert("🎉 Congratulations! You've completed all lessons in this course.");
-    }
-  };
+    const handleLessonSelect = (lesson) => {
+        setCurrentLesson(lesson);
 
-  const goToPreviousLesson = () => {
-    if (currentLessonIndex > 0) {
-      const prevIndex = currentLessonIndex - 1;
-      setCurrentLessonIndex(prevIndex);
-      setCurrentLesson(allLessons[prevIndex]);
-    }
-  };
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    };
 
-  const handleMarkComplete = async () => {
-    if (!currentLesson) return;
+    const handleSaveNotes = () => {
+        if (!currentLesson) return;
 
-    try {
-      await completeLesson(currentLesson.id);
-    } catch (err) {
-      alert("Failed to mark lesson complete. Please try again.");
-    }
-  };
+        localStorage.setItem(
+            `notes-${courseId}-${currentLesson.id}`,
+            notes
+        );
+    };
 
-  const handleVideoComplete = async () => {
-    if (!currentLesson) return;
+    const handleCompleteLesson = async (quizScore = null) => {
+        if (!currentLesson) return;
 
-    // Auto-complete lesson when video reaches 90%
-    if (!progress?.completedLessons?.includes(currentLesson.id)) {
-      try {
-        await completeLesson(currentLesson.id);
-      } catch (err) {
-        console.error('Error auto-completing lesson:', err);
-      }
-    }
-  };
+        try {
+            await completeLesson(currentLesson.id, quizScore);
 
-  const handleQuizComplete = async (data) => {
-    refetchProgress();
-    
-    if (data.percentComplete === 100) {
-      alert("🎊 Course completed! Congratulations!");
-    }
-  };
+            await refetchProgress();
 
-  const saveNotes = () => {
-    if (currentLesson) {
-      localStorage.setItem(
-        `course_${courseId}_lesson_${currentLesson.id}_notes`,
-        notes
-      );
-      alert("💾 Notes saved successfully!");
-    }
-  };
+            const currentIndex = lessons.findIndex(
+                (lesson) => lesson.id === currentLesson.id
+            );
 
-  const isLessonCompleted = (lessonId) => {
-    return progress?.completedLessons?.includes(lessonId) || false;
-  };
+            if (currentIndex < lessons.length - 1) {
+                setCurrentLesson(lessons[currentIndex + 1]);
+            }
+        } catch (err) {
+            console.error("Could not complete lesson:", err);
+            alert("Could not save your progress. Please try again.");
+        }
+    };
 
-  if (loading || progressLoading) {
-    return (
-      <>
-        <Navbar />
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading course...</p>
-        </div>
-      </>
-    );
-  }
+    const handleQuizComplete = async (score) => {
+        const passingScore =
+            currentLesson?.quiz?.passingScore ?? 70;
 
-  if (!course) {
-    return (
-      <>
-        <Navbar />
-        <div className="error-container">
-          <h2>Course not found</h2>
-          <button onClick={() => navigate("/courses")} className="btn-primary">
-            Back to Courses
-          </button>
-        </div>
-      </>
-    );
-  }
+        if (score >= passingScore) {
+            await handleCompleteLesson(score);
 
-  return (
-    <>
-      <Navbar />
-      <div className="learning-container">
-        {/* Sidebar with Lesson List */}
-        <aside className="course-sidebar">
-          <div className="course-header">
-            <button 
-              className="back-btn"
-              onClick={() => navigate(`/course/${courseId}`)}
-            >
-              ← Back to Course
-            </button>
-            <h2>{course.title}</h2>
-            
-            {progress && (
-              <div className="progress-overview">
-                <ProgressBar 
-                  percent={progress.percentComplete} 
-                  showText={true}
-                  height="10px"
-                />
-              </div>
-            )}
-          </div>
+            alert(
+                `Quiz passed with ${score}%. Your progress has been saved!`
+            );
+        } else {
+            await refetchProgress();
 
-          <LessonList
-            modules={course.modules || []}
-            completedLessons={progress?.completedLessons || []}
-            currentLesson={currentLesson}
-            onLessonClick={goToLesson}
-          />
-        </aside>
+            alert(
+                `You scored ${score}%. You need ${passingScore}% to pass. Try again!`
+            );
+        }
+    };
 
-        {/* Main Content */}
-        <main className="learning-content">
-          {currentLesson && (
-            <>
-              <div className="lesson-header">
-                <div className="lesson-breadcrumb">
-                  <span>{currentLesson.moduleTitle}</span>
-                  <span className="separator"> / </span>
-                  <span>{currentLesson.title}</span>
+    const handleVideoComplete = async () => {
+        if (!currentLesson) return;
+
+        await handleCompleteLesson();
+    };
+
+    const handleVideoAutoSave = async (currentTime) => {
+        if (!currentLesson) return;
+
+        try {
+            await apiRequest("/progress/autosave-video", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    courseId,
+                    lessonId: currentLesson.id,
+                    currentTime,
+                }),
+            });
+        } catch (err) {
+            console.error("Could not autosave video:", err);
+        }
+    };
+
+    const isYouTubeUrl = (url) => {
+        if (!url) return false;
+
+        return (
+            url.includes("youtube.com/watch") ||
+            url.includes("youtu.be/")
+        );
+    };
+
+    const getYouTubeEmbedUrl = (url) => {
+        if (!url) return "";
+
+        try {
+            const parsed = new URL(url);
+
+            if (parsed.hostname.includes("youtu.be")) {
+                const id = parsed.pathname.replace("/", "");
+
+                return `https://www.youtube.com/embed/${id}`;
+            }
+
+            const videoId = parsed.searchParams.get("v");
+
+            if (videoId) {
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+        } catch {
+            return "";
+        }
+
+        return "";
+    };
+
+    const getVideoUrl = () => {
+        return (
+            currentLesson?.videoUrl ||
+            currentLesson?.video ||
+            currentLesson?.youtubeUrl ||
+            ""
+        );
+    };
+
+    if (loading) {
+        return (
+            <div className="course-learning-page">
+                <div className="loading">
+                    Loading your learning experience...
                 </div>
-                
-                <div className="lesson-actions">
-                  <button 
-                    className="btn-secondary"
-                    onClick={() => setShowNotes(!showNotes)}
-                  >
-                    📝 {showNotes ? "Hide Notes" : "Show Notes"}
-                  </button>
-                  {!isLessonCompleted(currentLesson.id) && (
-                    <button 
-                      className="btn-primary"
-                      onClick={handleMarkComplete}
-                      disabled={completing}
-                    >
-                      {completing ? "Marking..." : "Mark Complete"}
-                    </button>
-                  )}
-                  {isLessonCompleted(currentLesson.id) && (
-                    <span className="completed-badge">✓ Completed</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="lesson-content">
-                {currentLesson.type === "video" && (
-                  <div className="video-section">
-                    <VideoPlayer
-                      videoUrl={currentLesson.videoUrl || "https://www.w3schools.com/html/mov_bbb.mp4"}
-                      courseId={courseId}
-                      lessonId={currentLesson.id}
-                      savedPosition={progress?.videoPositions?.[currentLesson.id] || 0}
-                      onComplete={handleVideoComplete}
-                    />
-                    
-                    <div className="lesson-description">
-                      <h3>{currentLesson.title}</h3>
-                      <p>{currentLesson.description}</p>
-                    </div>
-
-                    {currentLesson.resources && (
-                      <div className="lesson-resources">
-                        <h4>📚 Downloadable Resources</h4>
-                        <ul>
-                          {currentLesson.resources.map((resource, index) => (
-                            <li key={index}>
-                              <a 
-                                href="#" 
-                                onClick={(e) => { 
-                                  e.preventDefault(); 
-                                  alert(`Download: ${resource}`); 
-                                }}
-                              >
-                                📄 {resource}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {currentLesson.type === "quiz" && (
-                  <div className="quiz-section">
-                    <div className="quiz-header">
-                      <h3>📝 {currentLesson.title}</h3>
-                      <p>Answer all questions to complete this lesson. You need 70% to pass.</p>
-                    </div>
-                    
-                    <QuizRenderer
-                      questions={currentLesson.questions || []}
-                      courseId={courseId}
-                      lessonId={currentLesson.id}
-                      onComplete={handleQuizComplete}
-                    />
-                  </div>
-                )}
-
-                {currentLesson.type === "document" && (
-                  <div className="document-section">
-                    <div className="document-header">
-                      <h3>📄 {currentLesson.title}</h3>
-                      <p>{currentLesson.description}</p>
-                    </div>
-                    <div className="document-content">
-                      <p>{currentLesson.content || "Document content will be displayed here."}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Navigation */}
-              <div className="lesson-navigation">
-                <button 
-                  className="btn-secondary"
-                  onClick={goToPreviousLesson}
-                  disabled={currentLessonIndex === 0}
-                >
-                  ← Previous Lesson
-                </button>
-                
-                <span className="lesson-counter">
-                  Lesson {currentLessonIndex + 1} of {allLessons.length}
-                </span>
-                
-                <button 
-                  className="btn-secondary"
-                  onClick={goToNextLesson}
-                  disabled={currentLessonIndex === allLessons.length - 1}
-                >
-                  Next Lesson →
-                </button>
-              </div>
-            </>
-          )}
-        </main>
-
-        {/* Notes Panel */}
-        {showNotes && (
-          <div className="notes-panel">
-            <div className="notes-header">
-              <h3>📝 Lesson Notes</h3>
-              <button 
-                className="close-notes"
-                onClick={() => setShowNotes(false)}
-              >
-                ✕
-              </button>
             </div>
-            <textarea
-              className="notes-textarea"
-              placeholder="Take notes about this lesson..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-            <button className="btn-primary save-notes" onClick={saveNotes}>
-              💾 Save Notes
-            </button>
-          </div>
-        )}
-      </div>
-    </>
-  );
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="course-learning-page">
+                <div className="error-message">
+                    {error}
+                </div>
+
+                <button onClick={() => navigate("/dashboard")}>
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
+
+    if (!course) {
+        return (
+            <div className="course-learning-page">
+                <h2>Course not found</h2>
+
+                <button onClick={() => navigate("/dashboard")}>
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
+
+    const completedLessons =
+        progress?.completedLessons || [];
+
+    const completedCount = completedLessons.length;
+
+    const percentComplete =
+        progress?.percentComplete ??
+        Math.round(
+            (completedCount / Math.max(lessons.length, 1)) * 100
+        );
+
+    const currentIndex = currentLesson
+        ? lessons.findIndex(
+              (lesson) => lesson.id === currentLesson.id
+          )
+        : 0;
+
+    const videoUrl = getVideoUrl();
+
+    const currentIsCompleted =
+        currentLesson &&
+        completedLessons.includes(currentLesson.id);
+
+    const isQuiz = Boolean(currentLesson?.quiz);
+
+    return (
+        <div className="course-learning-page">
+
+            <header className="learning-header">
+
+                <button
+                    className="back-button"
+                    onClick={() => navigate("/dashboard")}
+                >
+                    ← Dashboard
+                </button>
+
+                <div>
+                    <h1>
+                        {course.title || "Personal Finances"}
+                    </h1>
+
+                    <p>
+                        Your personalized learning journey
+                    </p>
+                </div>
+
+            </header>
+
+            <div className="learning-progress">
+
+                <div className="progress-top">
+
+                    <strong>
+                        Course Progress
+                    </strong>
+
+                    <span>
+                        {percentComplete}%
+                    </span>
+
+                </div>
+
+                <div className="progress-bar">
+                    <div
+                        className="progress-fill"
+                        style={{
+                            width: `${percentComplete}%`,
+                        }}
+                    />
+                </div>
+
+                <p>
+                    {completedCount} of {lessons.length} lessons completed
+                </p>
+
+            </div>
+
+            <div className="learning-layout">
+
+                <aside className="lesson-sidebar">
+
+                    <h2>
+                        Your Learning Path
+                    </h2>
+
+                    <LessonList
+                        lessons={lessons}
+                        completedLessons={completedLessons}
+                        currentLessonId={currentLesson?.id}
+                        onLessonSelect={handleLessonSelect}
+                        onMarkComplete={handleCompleteLesson}
+                        userProgress={progress}
+                    />
+
+                </aside>
+
+                <main className="lesson-content">
+
+                    {currentLesson && (
+                        <>
+
+                            <div className="lesson-heading">
+
+                                <span className="module-label">
+                                    {currentLesson.moduleTitle}
+                                </span>
+
+                                <h2>
+                                    {currentLesson.title}
+                                </h2>
+
+                                <p>
+                                    Step {currentIndex + 1} of{" "}
+                                    {lessons.length}
+                                </p>
+
+                            </div>
+
+                            {currentLesson.description && (
+                                <div className="lesson-description">
+                                    {currentLesson.description}
+                                </div>
+                            )}
+
+                            {Array.isArray(currentLesson.steps) &&
+                                currentLesson.steps.length > 0 && (
+                                    <div className="study-steps">
+
+                                        <h3>
+                                            Steps to complete
+                                        </h3>
+
+                                        {currentLesson.steps.map(
+                                            (step, index) => (
+                                                <div
+                                                    className="study-step"
+                                                    key={index}
+                                                >
+                                                    <div className="step-number">
+                                                        {index + 1}
+                                                    </div>
+
+                                                    <div>
+                                                        <h4>
+                                                            {step.title ||
+                                                                `Step ${
+                                                                    index + 1
+                                                                }`}
+                                                        </h4>
+
+                                                        <p>
+                                                            {step.text ||
+                                                                step.description ||
+                                                                step}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+
+                                    </div>
+                                )}
+
+                            {currentLesson.content && (
+                                <div className="lesson-content-text">
+                                    <h3>
+                                        Learn
+                                    </h3>
+
+                                    <p>
+                                        {currentLesson.content}
+                                    </p>
+                                </div>
+                            )}
+
+                            {videoUrl && (
+                                <div className="lesson-video">
+
+                                    <h3>
+                                        Watch & Learn
+                                    </h3>
+
+                                    {isYouTubeUrl(videoUrl) ? (
+                                        <iframe
+                                            className="youtube-player"
+                                            src={getYouTubeEmbedUrl(
+                                                videoUrl
+                                            )}
+                                            title={
+                                                currentLesson.title
+                                            }
+                                            allowFullScreen
+                                        />
+                                    ) : videoUrl.includes(
+                                          "youtube.com/results"
+                                      ) ? (
+                                        <div className="youtube-search">
+                                            <p>
+                                                Watch a helpful YouTube
+                                                lesson for this topic.
+                                            </p>
+
+                                            <a
+                                                href={videoUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                Open YouTube lesson →
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <VideoPlayer
+                                            src={videoUrl}
+                                            title={
+                                                currentLesson.title
+                                            }
+                                            currentTime={
+                                                progress?.videoPositions?.[
+                                                    currentLesson.id
+                                                ] || 0
+                                            }
+                                            onVideoComplete={
+                                                handleVideoComplete
+                                            }
+                                            onAutoSave={
+                                                handleVideoAutoSave
+                                            }
+                                        />
+                                    )}
+
+                                </div>
+                            )}
+
+                            {isQuiz && (
+                                <div className="lesson-quiz">
+
+                                    <h3>
+                                        Practice Quiz
+                                    </h3>
+
+                                    <QuizRenderer
+                                        quiz={currentLesson.quiz}
+                                        onQuizComplete={
+                                            handleQuizComplete
+                                        }
+                                        userScore={
+                                            progress?.quizScores?.[
+                                                currentLesson.id
+                                            ]
+                                        }
+                                    />
+
+                                </div>
+                            )}
+
+                            {!isQuiz && (
+                                <button
+                                    className="complete-button"
+                                    disabled={
+                                        currentIsCompleted ||
+                                        completing
+                                    }
+                                    onClick={() =>
+                                        handleCompleteLesson()
+                                    }
+                                >
+                                    {currentIsCompleted
+                                        ? "✓ Completed"
+                                        : completing
+                                        ? "Saving..."
+                                        : "Mark Lesson Complete"}
+                                </button>
+                            )}
+
+                            {isQuiz &&
+                                !currentIsCompleted && (
+                                    <div className="quiz-completion-note">
+                                        Pass the quiz to complete this
+                                        lesson.
+                                    </div>
+                                )}
+
+                            <div className="notes-section">
+
+                                <h3>
+                                    My Notes
+                                </h3>
+
+                                <textarea
+                                    value={notes}
+                                    onChange={(e) =>
+                                        setNotes(e.target.value)
+                                    }
+                                    placeholder="Write your notes here..."
+                                />
+
+                                <button
+                                    onClick={handleSaveNotes}
+                                >
+                                    Save Notes
+                                </button>
+
+                            </div>
+
+                            {currentIndex < lessons.length - 1 && (
+                                <button
+                                    className="next-lesson-button"
+                                    onClick={() =>
+                                        setCurrentLesson(
+                                            lessons[currentIndex + 1]
+                                        )
+                                    }
+                                >
+                                    Next Lesson →
+                                </button>
+                            )}
+
+                        </>
+                    )}
+
+                </main>
+
+            </div>
+
+        </div>
+    );
 }
 
 export default CourseLearning;

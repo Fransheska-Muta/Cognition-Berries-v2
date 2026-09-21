@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../config/api";
 import "./FinancialDashboard.css";
 import Navbar from "../../components/Navbar/Navbar";
+import { useAuth } from "../../Context/AuthContext";
 
 function FinancialDashboard() {
     const navigate = useNavigate();
@@ -25,6 +26,32 @@ function FinancialDashboard() {
         totalStudyTime: 0,
         averageScore: 0
     });
+
+const { currentUser } = useAuth();
+
+const [user, setUser] = useState(null);
+
+useEffect(() => {
+  try {
+    const savedUser = localStorage.getItem("user");
+
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  } catch (error) {
+    console.error("Could not load user:", error);
+  }
+}, []);
+
+const userName =
+  currentUser?.displayName ||
+  user?.name ||
+  currentUser?.email?.split("@")[0] ||
+  user?.email?.split("@")[0] ||
+  "Student";
+
+  
+  
     const [studyStreak, setStudyStreak] = useState(0);
     useEffect(() => {
         // Get the answers saved after the onboarding quiz
@@ -182,28 +209,71 @@ function FinancialDashboard() {
         return progress?.percentComplete || 0;
     };
 
-    const handleContinueCourse = (course) => {
-        const courseId = getCourseId(course);
+const handleContinueCourse = async (course) => {
+    try {
+        const courseId =
+            course?.course_id ||
+            course?.id ||
+            course?._id;
 
-        if (courseId) {
-            console.log(
-                "Opening course:",
-                getCourseTitle(course),
-                courseId
-            );
-
-            navigate(`/learn/${courseId}`);
-        } else {
-            console.error(
-                "No valid course ID found:",
-                course
-            );
-
-            alert(
-                "Unable to open course. Please try again."
-            );
+        if (!courseId) {
+            console.error("❌ No course ID found:", course);
+            return;
         }
-    };
+
+        console.log("📚 Starting course:", courseId);
+
+        // Check enrollment
+        const enrollmentResponse = await apiRequest(
+            `/enroll/${courseId}`,
+            {
+                method: "GET"
+            }
+        );
+
+        const enrollmentData = await enrollmentResponse.json();
+
+        console.log("👤 Enrollment:", enrollmentData);
+
+        // Enroll if necessary
+        if (!enrollmentData.isEnrolled) {
+            const enrollResponse = await apiRequest(
+                `/enroll/${courseId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            const enrollData = await enrollResponse.json();
+
+            if (!enrollResponse.ok) {
+                throw new Error(
+                    enrollData?.error ||
+                    enrollData?.message ||
+                    "Could not enroll in course"
+                );
+            }
+
+            console.log("✅ Automatically enrolled:", enrollData);
+        }
+
+        // Go to the learning page
+        navigate(
+            `/course/${encodeURIComponent(
+                String(courseId)
+            )}/learn`
+        );
+
+    } catch (error) {
+        console.error(
+            "❌ Failed to start course:",
+            error
+        );
+    }
+};
 
     const getPersonalizedCourses = () => {
         if (
@@ -310,13 +380,7 @@ function FinancialDashboard() {
 
                     <div>
 
-                        <h1>
-                            Welcome back,{" "}
-                            {onboardingData?.name ||
-                                onboardingData?.firstName ||
-                                "Thabo"}
-                            !
-                        </h1>
+                        <h1> Welcome back,{" "} {userName}! </h1>
 
                         <p>
                             Keep up the great work!
