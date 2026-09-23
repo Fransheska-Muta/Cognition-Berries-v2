@@ -4,13 +4,16 @@
     padding: 40px;
     font-family: Arial, sans-serif;
     box-sizing: border-box;
+    /* border: 2px solid red; */
 }
 
 .dashboard-card {
     max-width: 1100px;
     margin: auto;
-    background: white;
+    /* background: rgb(186, 158, 209); */
     border: 1px solid #e3e0eb;
+        /* border: 2px solid red; */
+
     border-radius: 18px;
     padding: 28px;
     box-sizing: border-box;
@@ -91,6 +94,7 @@
 }
 
 .stats-grid {
+    /* border: 2px solid red; */
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
@@ -98,14 +102,15 @@
 }
 
 .stat-card {
+    /* border: 2px solid red; */
     position: relative;
-    min-height: 115px;
+    min-height: 118px;
     padding: 15px;
     background: #ffffff;
-    border: 1px solid #e3e0e8;
+    /* border: 1px solid #e3e0e8; */
     border-radius: 10px;
     box-sizing: border-box;
-    box-shadow: 0 2px 8px rgba(40, 30, 60, 0.03);
+    box-shadow: 0 2px 8px rgba(2, 0, 7, 0.6);
 }
 
 .stat-card p {
@@ -215,6 +220,7 @@
 }
 
 .personalized-learning-card {
+    /* border: 8px solid red; */
     width: 100%;
     box-sizing: border-box;
     transition: 0.2s ease;
@@ -252,17 +258,25 @@ div[style*="borderBottom"]:hover {
     gap: 12px;
 }
 
-.recommended-card,
-.activity-card {
-    border: 1px solid #e3e0e8;
+.recommended-card,.activity-card {
+    /* border: 1px solid #e3e0e8; */
+    /* border: 2px solid red; */
     border-radius: 10px;
     padding: 18px;
     background: white;
-    box-shadow: 0 2px 8px rgba(40, 30, 60, 0.03);
+    box-shadow: 0 2px 8px rgba(40, 30, 60, 0.7);
+}
+
+.separation{
+    border: 2px solid rgb(138, 82, 211);
+    border-radius: 20px;
+    padding: 20px;
+    /* box-Shadow: 0 2px 8px rgba(40, 30, 60, 0.7); */
 }
 
 .recommended-card > h3,
 .activity-header h3 {
+    /* border: 2px solid red; */
     margin: 0 0 18px;
     font-size: 13px;
     color: #222;
