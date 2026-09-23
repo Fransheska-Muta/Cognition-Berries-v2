@@ -47,36 +47,28 @@ function App() {
         <Route path="/phone-login" element={<PhoneLogin />} />
 
         {/* Protected routes */}
-        <Route
-          path="/onboarding"
-          element={
+        <Route path="/onboarding" element={
             <ProtectedRoute>
               <Onboarding />
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path='/home'
-          element={
+        <Route path='/home' element={
             <ProtectedRoute>
               <HomePage />
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path='/courses'
-          element={
+        <Route path='/courses' element={
             <ProtectedRoute>
               <Courses />
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path='/dashboard'
-          element={
+        <Route path='/dashboard' element={
             <ProtectedRoute>
               <FinancialDashboard />
             </ProtectedRoute>

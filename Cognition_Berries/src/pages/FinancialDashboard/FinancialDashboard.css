@@ -274,8 +274,7 @@ div[style*="borderBottom"]:hover {
     /* box-Shadow: 0 2px 8px rgba(40, 30, 60, 0.7); */
 }
 
-.recommended-card > h3,
-.activity-header h3 {
+.recommended-card > h3,.activity-header h3 {
     /* border: 2px solid red; */
     margin: 0 0 18px;
     font-size: 13px;
@@ -417,61 +416,47 @@ div[style*="borderBottom"]:hover {
 }
 
 @media (max-width: 1000px) {
-
     .dashboard {
         padding: 25px;
     }
-
     .dashboard-card {
         padding: 24px;
     }
-
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
     .bottom-section {
         grid-template-columns: 1fr;
     }
-
 }
 
 @media (max-width: 768px) {
-
     .dashboard {
         padding: 20px;
     }
-
     .dashboard-card {
         padding: 20px;
         border-radius: 14px;
     }
-
     .welcome-section {
         align-items: flex-start;
         gap: 15px;
     }
-
     .welcome-section h1 {
         font-size: 21px;
     }
-
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
     .recommended-content {
         align-items: flex-start;
     }
-
 }
 
 @media (max-width: 600px) {
-
     .dashboard {
         padding: 10px;
     }
-
     .dashboard-card {
         padding: 16px;
         border-radius: 12px;
