@@ -24,5 +24,7 @@ node_modules
 *.sln
 *.sw?
 *.env
+node_modules/
 .env
 *cypress
+server/.env
