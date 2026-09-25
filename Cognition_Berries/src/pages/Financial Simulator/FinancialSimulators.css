@@ -13,6 +13,44 @@
   margin: 0 auto;
 }
 
+/* Graph axis labels */
+.chart-axis-label {
+  /* border: 2px solid red; */
+  fill: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.chart-axis-title {
+  fill: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chart-grid-line {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-axis {
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+}
+
+.chart-line {
+  stroke: #9d1d4f;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-point {
+  fill: #9d1d4f;
+  stroke: white;
+  stroke-width: 2;
+}
+
 /* .back-button {
   border: none;
   background: transparent;
