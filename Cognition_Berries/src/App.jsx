@@ -1,10 +1,11 @@
 import { Route, Routes, Navigate } from "react-router-dom"
+
 import Navbar from './components/Navbar/Navbar'
 import SignUp from './pages/AuthPages/SignUp'
 import Login from './pages/AuthPages/Login'
 import HomePage from './pages/HomePage/HomePage'
 import NotFound from './pages/NotFound/NotFound'
-import UserDashboard from "./pages/Dashboard/User Dashboard/UserDashboard"
+import FinancialDashboard from "./pages/FinancialDashboard/FinancialDashboard"
 import LandingPage from "./pages/LandingPage/LandingPage"
 import AboutUs from "./pages/AboutPage/AboutPage"
 import Courses from "./pages/Courses/Courses"
@@ -15,26 +16,29 @@ import { CartProvider } from "./Context/CartContext"
 import OrdersSummary from "./pages/Orders-summary/Orders-summary"
 import LiveSession from "./pages/LiveSession/LiveSession"
 import SettingsPage from "./pages/SettingsPage/Settings"
-import CourseDetail from './pages/CourseDetail/CourseDetail';
-import CourseLearning from './pages/CourseLearning/CourseLearning';
+import CourseDetail from './pages/CourseDetail/CourseDetail'
+import CourseLearning from './pages/CourseLearning/CourseLearning'
 import PhoneLogin from "./pages/AuthPages/PhoneLogin"
-import { useAuth } from "./Context/AuthContext" // Import useAuth hook
+import { useAuth } from "./Context/AuthContext"
 import BookDetail from "./pages/Book Details/BookDetails"
 import Blog from "./pages/BlogPage/BlogPage"
 import ForumHome from "./pages/ComminityForum/ForumHome"
+import Onboarding from "./pages/Onboarding/Onboarding"
+import FinancialSimulators from "./pages/Financial Simulator/FinancialSimulators"
 
 // Updated ProtectedRoute to use AuthContext
 const ProtectedRoute = ({ children }) => {
-  const { currentUser } = useAuth();
-  
+  const { currentUser } = useAuth()
+
   // Redirect to login if not authenticated
-  return currentUser ? children : <Navigate to='/login' replace />;
+  return currentUser ? children : <Navigate to='/login' replace />
 }
 
 function App() {
   return (
     <CartProvider>
       <Routes>
+
         {/* Public routes */}
         <Route path='/' element={<LandingPage />} />
         <Route path='/signup' element={<SignUp />} />
@@ -42,23 +46,139 @@ function App() {
         <Route path='/about' element={<AboutUs />} />
         <Route path="/phone-login" element={<PhoneLogin />} />
 
-        {/* Protected routes - all render as children */}
-        <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-        <Route path='/courses' element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-        <Route path='/dashboard' element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-        <Route path='/community-forum' element={<ProtectedRoute><ForumHome /></ProtectedRoute>} />
-        <Route path="/course/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-        <Route path="/course/:courseId/learn" element={<ProtectedRoute><CourseLearning /></ProtectedRoute>} />
-        <Route path='/extra-material' element={<ProtectedRoute><ExtraMaterial /></ProtectedRoute>} />
-        <Route path="/extra-material/:id" element={<BookDetail />} />
-        <Route path='/blog' element={<Blog />}/>
-        <Route path='/cart' element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-        <Route path='/checkout' element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-        <Route path='/order-success' element={<ProtectedRoute><OrdersSummary /></ProtectedRoute>} />
-        <Route path='/live-session' element={<ProtectedRoute><LiveSession /></ProtectedRoute>} />
-        <Route path='/settings' element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        {/* Protected routes */}
+        <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path='/home' element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path='/courses' element={
+            <ProtectedRoute>
+              <Courses />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path='/dashboard' element={
+            <ProtectedRoute>
+              <FinancialDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/financial-simulators'
+          element={
+            <ProtectedRoute>
+              <FinancialSimulators />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/community-forum'
+          element={
+            <ProtectedRoute>
+              <ForumHome />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/course/:courseId"
+          element={
+            <ProtectedRoute>
+              <CourseDetail />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/course/:courseId/learn"
+          element={
+            <ProtectedRoute>
+              <CourseLearning />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/extra-material'
+          element={
+            <ProtectedRoute>
+              <ExtraMaterial />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/extra-material/:id"
+          element={<BookDetail />}
+        />
+
+        <Route path='/blog' element={<Blog />} />
+
+        <Route
+          path="/FinancialDashboard"
+          element={<FinancialDashboard />}
+        />
+
+        <Route
+          path='/cart'
+          element={
+            <ProtectedRoute>
+              <CartPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/checkout'
+          element={
+            <ProtectedRoute>
+              <CheckoutPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/order-success'
+          element={
+            <ProtectedRoute>
+              <OrdersSummary />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/live-session'
+          element={
+            <ProtectedRoute>
+              <LiveSession />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/settings'
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path='*' element={<NotFound />} />
+
       </Routes>
     </CartProvider>
   )
