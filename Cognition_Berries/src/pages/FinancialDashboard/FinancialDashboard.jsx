@@ -158,9 +158,33 @@ const userName =
     }
     const activeKnowledgeBars = getKnowledgeBars(knowledgeLevel);
     const getCourseId = (course) => {
-        return ( course?.courseId || course?.course_id || course?._id || course?.id
-        )
+    const rawId =
+        course?.courseId ??
+        course?.course_id ??
+        course?._id ??
+        course?.id;
+
+    if (rawId === undefined || rawId === null) {
+        return null;
     }
+
+    // MongoDB ObjectId returned as { $oid: "..." }
+    if (typeof rawId === "object") {
+        if (rawId.$oid) {
+            return String(rawId.$oid);
+        }
+
+        // Some MongoDB responses can contain an object with an id field
+        if (rawId.id) {
+            return String(rawId.id);
+        }
+
+        console.error("❌ Course ID is an unexpected object:", rawId);
+        return null;
+    }
+
+    return String(rawId);
+};
 
     const getCourseTitle = (course) => {
         return ( course?.courseName || course?.title || course?.name ||"Untitled Course"
@@ -211,19 +235,16 @@ const userName =
 
 const handleContinueCourse = async (course) => {
     try {
-        const courseId =
-            course?.course_id ||
-            course?.id ||
-            course?._id;
+        const courseId = getCourseId(course);
+
+        console.log("📚 Course:", course);
+        console.log("🆔 Normalized Course ID:", courseId);
 
         if (!courseId) {
-            console.error("❌ No course ID found:", course);
+            console.error("❌ Could not find a valid course ID");
             return;
         }
 
-        console.log("📚 Starting course:", courseId);
-
-        // Check enrollment
         const enrollmentResponse = await apiRequest(
             `/enroll/${courseId}`,
             {
@@ -233,9 +254,6 @@ const handleContinueCourse = async (course) => {
 
         const enrollmentData = await enrollmentResponse.json();
 
-        console.log("👤 Enrollment:", enrollmentData);
-
-        // Enroll if necessary
         if (!enrollmentData.isEnrolled) {
             const enrollResponse = await apiRequest(
                 `/enroll/${courseId}`,
@@ -252,26 +270,19 @@ const handleContinueCourse = async (course) => {
             if (!enrollResponse.ok) {
                 throw new Error(
                     enrollData?.error ||
-                    enrollData?.message ||
                     "Could not enroll in course"
                 );
             }
 
-            console.log("✅ Automatically enrolled:", enrollData);
+            console.log("✅ Enrolled:", enrollData);
         }
 
-        // Go to the learning page
-        navigate(
-            `/course/${encodeURIComponent(
-                String(courseId)
-            )}/learn`
-        );
+        console.log("🚀 Opening course:", courseId);
+
+        navigate(`/course/${encodeURIComponent(courseId)}/learn`);
 
     } catch (error) {
-        console.error(
-            "❌ Failed to start course:",
-            error
-        );
+        console.error("❌ Failed to start course:", error);
     }
 };
 
@@ -1066,19 +1077,15 @@ const handleContinueCourse = async (course) => {
     ) : recommendedCourses.length === 0 ? (
       <p>No recommended courses available yet.</p>
     ) : (
-      recommendedCourses.map((course) => {
-        const courseId =
-          course.courseId ||
-          course.course_id ||
-          course._id ||
-          course.id;
+     recommendedCourses.map((course) => {
+    const courseId = getCourseId(course);
 
-        const courseTitle =
-          course.title ||
-          course.name ||
-          "Untitled Course";
+    const courseTitle =
+        course.title ||
+        course.name ||
+        "Untitled Course";
 
-        const progress = getCourseProgress(courseId);
+    const progress = getCourseProgress(courseId);
 
         return (
           <div className="recommended-course" key={courseId || courseTitle}>

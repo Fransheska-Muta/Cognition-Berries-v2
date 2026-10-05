@@ -311,26 +311,26 @@ function getPersonalFinanceModules() {
     ];
 }
 
-function getCourseModules(course) {
-    if (course?.modules && course.modules.length > 0) {
-        return course.modules;
-    }
+// function getCourseModules(course) {
+//     if (course?.modules && course.modules.length > 0) {
+//         return course.modules;
+//     }
 
-    const title =
-        String(course?.title || "").toLowerCase();
+//     const title =
+//         String(course?.title || "").toLowerCase();
 
-    const category =
-        String(course?.category || "").toLowerCase();
+//     const category =
+//         String(course?.category || "").toLowerCase();
 
-    if (
-        title.includes("personal finance") ||
-        category.includes("personal finance")
-    ) {
-        return getPersonalFinanceModules();
-    }
+//     if (
+//         title.includes("personal finance") ||
+//         category.includes("personal finance")
+//     ) {
+//         return getPersonalFinanceModules();
+//     }
 
-    return [];
-}
+//     return [];
+// }
 
 function getCourseModules(course) {
   if (
@@ -745,17 +745,29 @@ app.post("/users", async (req, res) => {
 // ----------------------- Public Courses (browseable) -----------------------
 // Make courses browseable without requiring Firebase auth so the app can show available courses.
 // This also ensures the DB connection is established and logs collection diagnostics to help troubleshooting.
-app.get("/courses", requireAuth,async (req, res) => {
+app.get("/courses/:id", async (req, res) => {
   try {
-    if (!db) {
-      await connectToMongo();
+    const courseId = String(req.params.id);
+
+    const matchConditions = [
+      { course_id: courseId },
+      { _id: courseId }
+    ];
+
+    if (ObjectId.isValid(courseId)) {
+      matchConditions.push({
+        _id: new ObjectId(courseId)
+      });
     }
 
-    console.log("📚 Fetching courses with images...");
-
-    const courses = await db.collection("material-courses")
+    const course = await db.collection("material-courses")
       .aggregate([
-        // Step 1: Convert image string to ObjectId if valid
+        {
+          $match: {
+            $or: matchConditions
+          }
+        },
+
         {
           $addFields: {
             imageObjectId: {
@@ -764,8 +776,12 @@ app.get("/courses", requireAuth,async (req, res) => {
                   $and: [
                     { $ne: ["$image", null] },
                     { $ne: ["$image", ""] },
-                    { $eq: [{ $strLenCP: "$image" }, 24] },
-                    { $regexMatch: { input: "$image", regex: /^[0-9a-fA-F]{24}$/ } }
+                    {
+                      $regexMatch: {
+                        input: "$image",
+                        regex: /^[0-9a-fA-F]{24}$/
+                      }
+                    }
                   ]
                 },
                 then: { $toObjectId: "$image" },
@@ -774,7 +790,7 @@ app.get("/courses", requireAuth,async (req, res) => {
             }
           }
         },
-        // Step 2: Lookup image data
+
         {
           $lookup: {
             from: "images",
@@ -783,32 +799,26 @@ app.get("/courses", requireAuth,async (req, res) => {
             as: "imageData"
           }
         },
-        // Step 3: Unwind imageData
+
         {
           $unwind: {
             path: "$imageData",
             preserveNullAndEmptyArrays: true
           }
         },
-        // Step 4: Extract displayImage from imageData.data
+
         {
           $addFields: {
             displayImage: {
               $cond: {
-                if: { 
-                  $and: [
-                    { $ne: ["$imageData", null] },
-                    { $ne: ["$imageData.data", null] },
-                    { $ne: ["$imageData.data", ""] }
-                  ]
-                },
+                if: { $ne: ["$imageData.data", null] },
                 then: "$imageData.data",
                 else: null
               }
             }
           }
         },
-        // Step 5: Clean up - remove temporary fields
+
         {
           $project: {
             imageObjectId: 0,
@@ -818,37 +828,22 @@ app.get("/courses", requireAuth,async (req, res) => {
       ])
       .toArray();
 
-    console.log(`✅ Fetched ${courses.length} courses`);
-    
-    // Diagnostic logging
-    const withDisplay = courses.filter(c => c.displayImage).length;
-    const withImageId = courses.filter(c => c.image).length;
-    const withoutImage = courses.filter(c => !c.image).length;
-    
-    console.log(`📊 Image Stats:`);
-    console.log(`   - Total courses: ${courses.length}`);
-    console.log(`   - With image IDs: ${withImageId}`);
-    console.log(`   - With displayImage (base64): ${withDisplay}`);
-    console.log(`   - Without images: ${withoutImage}`);
-    
-    // Detailed sample
-    if (courses.length > 0) {
-      const sample = courses[0];
-      console.log(`\n📝 Sample (${sample.title}):`);
-      console.log(`   - image: ${sample.image || 'NONE'}`);
-      console.log(`   - displayImage: ${sample.displayImage ? 
-        `${sample.displayImage.substring(0, 60)}... (${sample.displayImage.length} chars)` : 
-        'NONE'}`);
+    if (!course || course.length === 0) {
+      return res.status(404).json({
+        error: "Course not found"
+      });
     }
 
-    res.json(courses);
+    res.json(course[0]);
+
   } catch (err) {
-    console.error("❌ Failed to fetch courses:", err);
-    res.status(500).json({ 
-      error: "Failed to fetch courses", 
-      details: err.message 
+    console.error("Failed to fetch course:", err);
+
+    res.status(500).json({
+      error: "Failed to fetch course"
     });
-  }})
+  }
+});
 // Replace the GET /courses endpoint in server.js with this:
 
 

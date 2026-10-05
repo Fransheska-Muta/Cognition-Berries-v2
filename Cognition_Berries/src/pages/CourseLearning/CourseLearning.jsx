@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import LessonList from "../LessionLIst/LessionLIst";
-// import QuizRenderer from "../../../components/QuizRenderer/QuizRenderer";
-// import VideoPlayer from "../../../components/VideoPlayer/VideoPlayer";
-// import { apiRequest } from "../../../
+import LessonList from "../../pages/LessionLIst/LessionLIst";
+import QuizRenderer from "../../pages/QuizRender/QuizeRender";
+// import VideoPlayer from "../../pages/";
+import { apiRequest } from "../../config/api";
 import { useProgress } from "../../hooks/useProgress";
 import { useLessonCompletion } from "../../hooks/useLessonCompletion";
-// import "./CourseLearning.css";
+import "./CourseLearning.css";
 
 function CourseLearning() {
     const { courseId } = useParams();
@@ -37,7 +37,8 @@ function CourseLearning() {
         async function loadUser() {
             try {
                 const response = await apiRequest("/me");
-                setUser(response);
+const data = await response.json();
+setUser(data);
             } catch (err) {
                 console.error("Could not load user:", err);
             }
@@ -54,8 +55,10 @@ function CourseLearning() {
                 setLoading(true);
                 setError("");
 
-                const response = await apiRequest(`/courses/${courseId}`);
-                setCourse(response);
+const response = await apiRequest(`/courses/${courseId}`);
+const data = await response.json();
+console.log("📚 Course loaded:", data);
+setCourse(data);
             } catch (err) {
                 console.error("Could not load course:", err);
                 setError("Could not load this course.");
