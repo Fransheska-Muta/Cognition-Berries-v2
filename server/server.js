@@ -1,10 +1,12 @@
-// server.js
-// Enhanced Express server using Firebase Auth (verifyIdToken) + MongoDB
-// All endpoints properly protected with Firebase authentication where appropriate
+const dotenv = require("dotenv");
+console.log("SERVER.JS STARTED");
+console.log("MAIN CHECK:", require.main === module);
+require("dotenv").config();
+
+dotenv.config();
 
 const express = require("express");
 const { MongoClient, ObjectId } = require("mongodb");
-const dotenv = require("dotenv");
 const multer = require("multer");
 const cors = require("cors");
 const Paystack = require("paystack-api");
@@ -16,13 +18,14 @@ dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, param, validationResult } = require("express-validator");
-
+const { GoogleGenAI } = require("@google/genai");
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const Base_API = process.env.VITE_BASE_API || "52.44.223.219";
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+const client = new MongoClient(process.env.MONGO_URI);
 const paystack = PAYSTACK_SECRET_KEY ? Paystack(PAYSTACK_SECRET_KEY) : null;
 
 // ======================= Security Middleware =======================
@@ -393,6 +396,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 const defaultAllowedOrigins = [
   "http://52.44.223.219:3000",
   "http://localhost:5173",
+  "http://localhost:5174",
   "http://cognition-berries.s3-website-us-east-1.amazonaws.com",
 ];
 const envOrigins = process.env.ALLOWED_ORIGINS
@@ -417,6 +421,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // Explicitly handle OPTIONS preflight for all routes
 app.options("*", cors(corsOptions));
+
 // ----------------------- Firebase Admin Init -----------------------
 let serviceAccount;
 
@@ -450,10 +455,8 @@ if (serviceAccount) {
 // ----------------------- MongoDB -----------------------
 let db;
 
-async function connectToMongo() {
-  /*
+async function connectToMongo() {  /*
     ===========================
-    Server initialization notes
     ===========================
     - This file creates an Express app and registers routes.
     - When running normally (node server.js) the app listens on PORT.
@@ -466,9 +469,7 @@ async function connectToMongo() {
 
   // Skip connection if already connected (for tests)
   if (db) return db;
-  const client = new MongoClient(process.env.MONGO_URI, {
-    // Remove deprecated options
-  });
+
   try {
     console.log("MONGO_URI =", process.env.MONGO_URI);
     await client.connect();
@@ -485,20 +486,11 @@ async function connectToMongo() {
     throw err;
   }
 }
+function restoreScheduledReminders() {
+  console.log("⏰ Restoring scheduled reminders from DB...");
+}
 
-// Connect immediately if not in test mode
-if (process.env.NODE_ENV !== 'test') {
-  connectToMongo().then(() => {
-    // Only restore reminders after DB connection is established
-    restoreScheduledReminders();
-  }).catch(err => {
-    console.error('Failed to initialize server:', err);
-    process.exit(1);
-  });
-}
-if (process.env.NODE_ENV !== 'test') {
-  connectToMongo();
-}
+
 
 const requiredCollections = [
   "Users",
@@ -511,11 +503,8 @@ const requiredCollections = [
   "live-sessions",
   "material-books",
   "transactions",
-  "images",           
-  "session-bookings",
-  "enrollments",
-  "UserCourseProgress"
-];
+  "images", 
+];          
 
 // Create missing collections
 async function ensureCollections() {
@@ -554,21 +543,20 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
  */
 const validate = (req, res, next) => {
   const errors = validationResult(req);
+
   if (!errors.isEmpty()) {
-    return res.status(400).json({ 
-      error: "Validation failed", 
-      details: errors.array() 
+    return res.status(400).json({
+      error: "Validation failed",
+      details: errors.array(),
     });
   }
+
   next();
 };
 
-/**
- * Sanitize string inputs to prevent injection attacks
- */
 const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return input;
-  return input.replace(/[<>]/g, '');
+  if (typeof input !== "string") return input;
+  return input.replace(/[<>]/g, "");
 };
 
 /**
@@ -589,7 +577,7 @@ async function requireAuth(req, res, next) {
     - Attach a normalized req.user object containing { uid, email, name, phone } on success.
 
     Test-mode behavior:
-    - When NODE_ENV === 'test' AND SKIP_AUTH === 'true' the middleware injects a synthetic test user:
+    - When NODE_ENV === 'test' AND SKIP_AUTH === 'true' the middleware injects a synthetic testuser:
         req.user = { uid: 'test-uid', email: 'test@example.com', ... }
       This allows tests to exercise protected routes without contacting Firebase.
 
@@ -599,25 +587,29 @@ async function requireAuth(req, res, next) {
   */
 
   // Skip auth in test mode if needed
-  if (process.env.NODE_ENV === 'test' && process.env.SKIP_AUTH === 'true') {
+  if (process.env.NODE_ENV === "test" && process.env.SKIP_AUTH === "true") {
     req.user = {
-      uid: 'test-uid',
-      email: 'test@example.com',
-      name: 'Test User',
-      phone: ''
+      uid: "test-uid",
+      email: "test@example.com",
+      name: "Test User",
+      phone: "",
     };
     return next();
   }
 
   const authHeader = req.headers.authorization;
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    return res.status(401).json({
+      error: "Missing or invalid Authorization header",
+    });
   }
 
   const idToken = authHeader.split(" ")[1];
 
   try {
     const decoded = await admin.auth().verifyIdToken(idToken);
+
     req.user = {
       uid: decoded.uid,
       email: decoded.email,
@@ -635,7 +627,7 @@ async function requireAuth(req, res, next) {
             email: req.user.email,
             name: req.user.name,
             createdAt: new Date(),
-            role: "student"
+            role: "student",
           },
         },
         { upsert: true }
@@ -645,17 +637,21 @@ async function requireAuth(req, res, next) {
     next();
   } catch (err) {
     console.error("Firebase auth verification failed:", err);
-    return res.status(401).json({ error: "Unauthorized", detail: err.message });
+    return res.status(401).json({
+      error: "Unauthorized",
+      detail: err.message,
+    });
   }
 }
-
 // Optional middleware for admin-only routes
 async function requireAdmin(req, res, next) {
   try {
     const user = await db.collection("Users").findOne({ uid: req.user.uid });
+
     if (!user || user.role !== "admin") {
       return res.status(403).json({ error: "Admin access required" });
     }
+
     next();
   } catch (err) {
     console.error("Admin check failed:", err);
@@ -665,11 +661,11 @@ async function requireAdmin(req, res, next) {
 
 // ----------------------- Public routes (no auth required) -----------------------
 
-// Health check or welcome route (optional)
-app.get("/", (req, res) => 
-  res.json({ 
-    message: "Cognition Berries API", 
-    env: process.env.NODE_ENV || "development" 
+// Health check or welcome route
+app.get("/", (req, res) =>
+  res.json({
+    message: "Cognition Berries API",
+    env: process.env.NODE_ENV || "development",
   })
 );
 
@@ -677,17 +673,21 @@ app.get("/", (req, res) =>
 app.post("/users", async (req, res) => {
   try {
     const { uid, email, name, role } = req.body;
+
     if (!uid || !email) {
       return res.status(400).json({ error: "uid and email are required" });
     }
 
-    // 🧠 Optional: Check if domain has MX record
+    // Optional: Check if domain has MX record
     const domain = email.split("@")[1];
+
     await new Promise((resolve, reject) => {
       dns.resolveMx(domain, (err, addresses) => {
         if (err || !addresses || addresses.length === 0) {
           reject(new Error("Invalid email domain"));
-        } else resolve();
+        } else {
+          resolve();
+        }
       });
     });
 
@@ -696,13 +696,15 @@ app.post("/users", async (req, res) => {
       email,
       name: name || "",
       role: role || "student",
-      createdAt: new Date()
+      createdAt: new Date(),
     };
+
     await db.collection("Users").updateOne(
       { uid: user.uid },
       { $setOnInsert: user },
       { upsert: true }
     );
+
     res.status(201).json({ message: "User registered", user });
   } catch (err) {
     console.error("Failed to register user:", err);
@@ -710,64 +712,18 @@ app.post("/users", async (req, res) => {
   }
 });
 
-// app.post("/verify-recaptcha", async (req, res) => {
-//   const { token } = req.body;
-//   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-
-//   try {
-//     const response = await fetch(
-//       `https://recaptchaenterprise.googleapis.com/v1/projects/YOUR_PROJECT_ID/assessments?key=${secretKey}`,
-//       {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           event: {
-//             token: token,
-//             siteKey: "YOUR_SITE_KEY",
-//             expectedAction: "LOGIN",
-//           },
-//         }),
-//       }
-//     );
-
-//     const data = await response.json();
-//     res.json({
-//       success: data.tokenProperties.valid,
-//       score: data.riskAnalysis?.score || 0,
-//     });
-//   } catch (error) {
-//     console.error("reCAPTCHA verification error:", error);
-//     res.status(500).json({ success: false });
-//   }
-// });
-
-
 // ----------------------- Public Courses (browseable) -----------------------
-// Make courses browseable without requiring Firebase auth so the app can show available courses.
-// This also ensures the DB connection is established and logs collection diagnostics to help troubleshooting.
-app.get("/courses/:id", async (req, res) => {
+
+// Get all courses
+app.get("/courses", async (req, res) => {
   try {
-    const courseId = String(req.params.id);
-
-    const matchConditions = [
-      { course_id: courseId },
-      { _id: courseId }
-    ];
-
-    if (ObjectId.isValid(courseId)) {
-      matchConditions.push({
-        _id: new ObjectId(courseId)
-      });
+    if (!db) {
+      await connectToMongo();
     }
 
-    const course = await db.collection("material-courses")
+    const courses = await db
+      .collection("material-courses")
       .aggregate([
-        {
-          $match: {
-            $or: matchConditions
-          }
-        },
-
         {
           $addFields: {
             imageObjectId: {
@@ -776,108 +732,296 @@ app.get("/courses/:id", async (req, res) => {
                   $and: [
                     { $ne: ["$image", null] },
                     { $ne: ["$image", ""] },
+                    { $eq: [{ $strLenCP: "$image" }, 24] },
                     {
                       $regexMatch: {
                         input: "$image",
-                        regex: /^[0-9a-fA-F]{24}$/
-                      }
-                    }
-                  ]
+                        regex: /^[0-9a-fA-F]{24}$/,
+                      },
+                    },
+                  ],
                 },
                 then: { $toObjectId: "$image" },
-                else: null
-              }
-            }
-          }
+                else: null,
+              },
+            },
+          },
         },
-
         {
           $lookup: {
             from: "images",
             localField: "imageObjectId",
             foreignField: "_id",
-            as: "imageData"
-          }
+            as: "imageData",
+          },
         },
-
         {
           $unwind: {
             path: "$imageData",
-            preserveNullAndEmptyArrays: true
-          }
+            preserveNullAndEmptyArrays: true,
+          },
         },
-
         {
           $addFields: {
             displayImage: {
               $cond: {
-                if: { $ne: ["$imageData.data", null] },
+                if: {
+                  $and: [
+                    { $ne: ["$imageData", null] },
+                    { $ne: ["$imageData.data", null] },
+                    { $ne: ["$imageData.data", ""] },
+                  ],
+                },
                 then: "$imageData.data",
-                else: null
-              }
-            }
-          }
+                else: null,
+              },
+            },
+          },
         },
-
         {
           $project: {
             imageObjectId: 0,
-            imageData: 0
-          }
-        }
+            imageData: 0,
+          },
+        },
+      ])
+      .toArray();
+
+    res.json(courses);
+  } catch (err) {
+    console.error("Failed to fetch courses:", err);
+
+    res.status(500).json({
+      error: "Failed to fetch courses",
+    });
+  }
+});
+
+
+// Get a single course
+app.get("/courses/:id", async (req, res) => {
+  try {
+    if (!db) {
+      await connectToMongo();
+    }
+
+    const courseId = String(req.params.id);
+
+    const matchConditions = [
+      { course_id: courseId },
+      { _id: courseId },
+    ];
+
+    if (ObjectId.isValid(courseId)) {
+      matchConditions.push({
+        _id: new ObjectId(courseId),
+      });
+    }
+
+    const course = await db
+      .collection("material-courses")
+      .aggregate([
+        {
+          $match: {
+            $or: matchConditions,
+          },
+        },
+        {
+          $addFields: {
+            imageObjectId: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$image", null] },
+                    { $ne: ["$image", ""] },
+                    { $eq: [{ $strLenCP: "$image" }, 24] },
+                    {
+                      $regexMatch: {
+                        input: "$image",
+                        regex: /^[0-9a-fA-F]{24}$/,
+                      },
+                    },
+                  ],
+                },
+                then: { $toObjectId: "$image" },
+                else: null,
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "images",
+            localField: "imageObjectId",
+            foreignField: "_id",
+            as: "imageData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$imageData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$imageData", null] },
+                    { $ne: ["$imageData.data", null] },
+                    { $ne: ["$imageData.data", ""] },
+                  ],
+                },
+                then: "$imageData.data",
+                else: null,
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            imageObjectId: 0,
+            imageData: 0,
+          },
+        },
       ])
       .toArray();
 
     if (!course || course.length === 0) {
       return res.status(404).json({
-        error: "Course not found"
+        error: "Course not found",
       });
     }
 
     res.json(course[0]);
-
   } catch (err) {
     console.error("Failed to fetch course:", err);
 
     res.status(500).json({
-      error: "Failed to fetch course"
+      error: "Failed to fetch course",
+    });
+  }
+});
+
+
+// Get an individual image
+app.get("/api/images/:imageId", async (req, res) => {
+  try {
+    const { imageId } = req.params;
+
+    if (!ObjectId.isValid(imageId)) {
+      return res.status(400).json({
+        error: "Invalid image ID",
+      });
+    }
+
+    const image = await db.collection("images").findOne({
+      _id: new ObjectId(imageId),
+    });
+
+    if (!image) {
+      return res.status(404).json({
+        error: "Image not found",
+      });
+    }
+
+    if (image.data && image.data.startsWith("data:image/")) {
+      return res.json({
+        id: image._id,
+        data: image.data,
+        mimeType: image.mimeType,
+        filename: image.filename,
+        uploadedAt: image.uploadedAt,
+      });
+    }
+
+    if (image.data && image.mimeType) {
+      const dataUrl = `data:${image.mimeType};base64,${image.data}`;
+
+      return res.json({
+        id: image._id,
+        data: dataUrl,
+        mimeType: image.mimeType,
+        filename: image.filename,
+        uploadedAt: image.uploadedAt,
+      });
+    }
+
+    res.json({
+      id: image._id,
+      data: image.data,
+      mimeType: image.mimeType,
+      filename: image.filename,
+    });
+  } catch (err) {
+    console.error("❌ Image retrieval error:", err);
+
+    res.status(500).json({
+      error: "Failed to retrieve image",
+      details: err.message,
     });
   }
 });
 // Replace the GET /courses endpoint in server.js with this:
 
 
-
 // Also add a dedicated endpoint to fetch individual images if needed
 app.get("/api/images/:imageId", async (req, res) => {
   try {
     const { imageId } = req.params;
-    
+
     if (!ObjectId.isValid(imageId)) {
       return res.status(400).json({ error: "Invalid image ID" });
     }
-    
-    const image = await db.collection("images").findOne({ 
-      _id: new ObjectId(imageId) 
+
+    const image = await db.collection("images").findOne({
+      _id: new ObjectId(imageId)
     });
-    
+
     if (!image) {
       return res.status(404).json({ error: "Image not found" });
     }
-    
-    // Return the image data directly
+
+    if (image.data && image.data.startsWith("data:image/")) {
+      return res.json({
+        id: image._id,
+        data: image.data,
+        mimeType: image.mimeType,
+        filename: image.filename,
+        uploadedAt: image.uploadedAt
+      });
+    }
+
+    if (image.data && image.mimeType) {
+      const dataUrl = `data:${image.mimeType};base64,${image.data}`;
+
+      return res.json({
+        id: image._id,
+        data: dataUrl,
+        mimeType: image.mimeType,
+        filename: image.filename,
+        uploadedAt: image.uploadedAt
+      });
+    }
+
     res.json({
       id: image._id,
       data: image.data,
       mimeType: image.mimeType,
       filename: image.filename
     });
-    
   } catch (err) {
     console.error("❌ Image retrieval error:", err);
-    res.status(500).json({ error: "Failed to retrieve image" });
+
+    res.status(500).json({
+      error: "Failed to retrieve image",
+      details: err.message
+    });
   }
 });
+
 // ----------------------- Protected routes (requireAuth) -----------------------
 
 // All other routes below require authentication (and admin where needed)
@@ -929,6 +1073,7 @@ app.get("/material-books", requireAuth, async (req, res) => {
             as: "imageData"
           }
         },
+
         // Step 3: Unwind imageData
         {
           $unwind: {
@@ -936,6 +1081,7 @@ app.get("/material-books", requireAuth, async (req, res) => {
             preserveNullAndEmptyArrays: true
           }
         },
+
         // Step 4: Extract displayImage from imageData.data
         {
           $addFields: {
@@ -962,6 +1108,7 @@ app.get("/material-books", requireAuth, async (req, res) => {
           }
         },
         // Step 6: Sort by upload date (newest first)
+
         {
           $sort: { updatedAt: -1 }
         }
@@ -994,9 +1141,10 @@ app.get("/material-books", requireAuth, async (req, res) => {
     res.json(books);
   } catch (err) {
     console.error("❌ Failed to fetch books:", err);
-    res.status(500).json({ 
-      error: "Failed to fetch books", 
-      details: err.message 
+    res.status(500).json({
+      error: "Failed to fetch books",
+      details: err.message
+
     });
   }
 });
@@ -1006,7 +1154,7 @@ app.get("/material-books", requireAuth, async (req, res) => {
 
 
 
-// Public forum posts (read-only)
+// Public forum posts
 app.get("/forum-posts", async (req, res) => {
   try {
     const posts = await db.collection("forum-posts").find().toArray();
@@ -1017,7 +1165,7 @@ app.get("/forum-posts", async (req, res) => {
   }
 });
 
-// Public forum replies (read-only)
+// Public forum replies
 app.get("/forum-replies", async (req, res) => {
   try {
     const replies = await db.collection("forum-replies").find().toArray();
@@ -1027,8 +1175,6 @@ app.get("/forum-replies", async (req, res) => {
     res.status(500).json({ error: "Failed to get replies" });
   }
 });
-
-// ----------------------- Auth-protected routes -----------------------
 
 // User profile management
 app.get("/me", requireAuth, async (req, res) => {
@@ -1175,12 +1321,44 @@ app.get("/courses", requireAuth, async (req, res) => {
           }
         },
         {
-          $project: {
-            imageObjectId: 0
+          $addFields: {
+            displayImage: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$imageData", null] },
+                    { $ne: ["$imageData.data", null] },
+                    { $ne: ["$imageData.data", ""] }
+                  ]
+                },
+                then: "$imageData.data",
+                else: null
+              }
+            }
           }
+        },
+        {
+          $project: {
+            imageObjectId: 0,
+            imageData: 0
+          }
+        },
+        {
+          $sort: { updatedAt: -1 }
         }
       ])
       .toArray();
+
+    console.log(`✅ Fetched ${courses.length} courses`);
+
+    const withDisplay = courses.filter(c => c.displayImage).length;
+    const withImageId = courses.filter(c => c.image).length;
+    const withoutImage = courses.filter(c => !c.image).length;
+
+    console.log(`📊 Image Stats:`);
+    console.log(`   - With displayImage: ${withDisplay}`);
+    console.log(`   - With image ID: ${withImageId}`);
+    console.log(`   - Without image: ${withoutImage}`);
 
     res.json(courses);
   } catch (err) {
@@ -1249,13 +1427,10 @@ app.get("/api/images/:imageId", async (req, res) => {
   }
 });
 
-
 app.post("/courses/:id/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { image, filename } = req.body;
     const courseId = req.params.id;
-    
-    // Validate course exists
     const course = await db.collection("material-courses").findOne({
       $or: [
         { course_id: courseId },
@@ -1271,29 +1446,25 @@ app.post("/courses/:id/", requireAuth, requireAdmin, async (req, res) => {
     if (!image || !image.startsWith('data:image/')) {
       return res.status(400).json({ error: "Invalid image format" });
     }
-    
     const matches = image.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
       return res.status(400).json({ error: "Invalid base64 image format" });
     }
-    
     const mimeType = matches[1];
     const base64Data = matches[2];
     const sizeInBytes = (base64Data.length * 3) / 4;
     const sizeInMB = sizeInBytes / (1024 * 1024);
-    
+
     if (sizeInMB > 5) {
       return res.status(400).json({ error: "Image too large. Maximum 5MB" });
     }
-    
-    // Delete old image if exists
+
     if (course.image && ObjectId.isValid(course.image)) {
-      await db.collection("images").deleteOne({ 
-        _id: new ObjectId(course.image) 
+      await db.collection("images").deleteOne({
+        _id: new ObjectId(course.image)
       });
     }
-    
-    // Create new image document
+
     const imageDoc = {
       filename: filename || `course_${courseId}_${Date.now()}.${mimeType}`,
       mimeType: `image/${mimeType}`,
@@ -1304,10 +1475,9 @@ app.post("/courses/:id/", requireAuth, requireAdmin, async (req, res) => {
       uploadedAt: new Date(),
       uploadedBy: req.user.uid
     };
-    
+
     const result = await db.collection("images").insertOne(imageDoc);
-    
-    // Update course with new image reference
+
     await db.collection("material-courses").updateOne(
       {
         $or: [
@@ -1325,13 +1495,12 @@ app.post("/courses/:id/", requireAuth, requireAdmin, async (req, res) => {
         }
       }
     );
-    
     res.json({
       message: "Course image uploaded successfully",
       imageId: result.insertedId,
       imageUrl: `/api/images/${result.insertedId}`
     });
-    
+
   } catch (err) {
     console.error("Course image upload error:", err);
     res.status(500).json({ error: "Failed to upload course image" });
@@ -1339,7 +1508,7 @@ app.post("/courses/:id/", requireAuth, requireAdmin, async (req, res) => {
 });
 app.delete("/courses/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.collection("material-courses").deleteOne({ 
+    const result = await db.collection("material-courses").deleteOne({
       $or: [
         { course_id: req.params.id },
         { _id: ObjectId.isValid(req.params.id) ? new ObjectId(req.params.id) : null }
@@ -2135,160 +2304,459 @@ app.post("/cart", requireAuth, async (req, res) => {
       quantity: parseInt(quantity) || 1,
       createdAt: new Date(),
     };
-    const result = await db.collection("Cart").insertOne(item);
-    res.status(201).json({ _id: result.insertedId, ...item });
+
+    await db.collection("UserCourseProgress").updateOne(
+      { uid, courseId },
+      { $set: updateData },
+      { upsert: true }
+    );
+
+    res.json({ message: "Progress updated", progress: updateData });
   } catch (err) {
-    console.error("Error adding to cart:", err);
-    res.status(500).json({ error: "Failed to add to cart" });
+    console.error("Failed to update progress:", err);
+    res.status(500).json({ error: "Failed to update progress" });
   }
 });
+
+// ======================= Financial AI Tutor (Gemini API) =======================
+
+const tutorLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    error: "You're sending messages too fast. Please slow down."
+  }
+});
+
+let gemini = null;
+
+if (process.env.GEMINI_API_KEY) {
+  gemini = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
+  });
+
+  console.log("✅ Gemini AI configured");
+} else {
+  console.warn(
+    "⚠️ GEMINI_API_KEY is missing. AI tutor will not work."
+  );
+}
+
+const GEMINI_MODEL =
+  process.env.GEMINI_MODEL || "gemini-3.6-flash";
+
+const sleep = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+
+// ======================= Gemini Generator =======================
+
+async function generateGeminiResponse(contents) {
+  if (!gemini) {
+    throw new Error("Gemini AI is not configured.");
+  }
+
+  const modelsToTry = [
+    GEMINI_MODEL,
+    "gemini-2.5-flash-lite"
+  ].filter(
+    (model, index, array) =>
+      array.indexOf(model) === index
+  );
+
+  let lastError = null;
+
+  for (const model of modelsToTry) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        console.log(
+          `🤖 Gemini model ${model} - attempt ${
+            attempt + 1
+          }/3`
+        );
+
+        const response =
+          await gemini.models.generateContent({
+            model,
+
+            contents,
+
+            config: {
+              systemInstruction: `
+You are the AI Financial Tutor for Cognition Berries.
+
+Your purpose is to help students understand financial literacy and personal finance concepts.
+
+You can explain:
+
+- Budgeting
+- Saving
+- Emergency funds
+- Credit cards
+- Credit scores
+- Debt
+- Loans
+- Interest
+- Compound interest
+- Banking
+- Inflation
+- Investing basics
+- Retirement concepts
+- Financial terminology
+- Risk
+- Diversification
+- Personal finance fundamentals
+
+TEACHING STYLE:
+
+- Explain concepts in simple language.
+- Assume the student may be a beginner.
+- Avoid unnecessary jargon.
+- Give simple examples when helpful.
+- Break complicated ideas into small steps.
+- Be friendly, patient, encouraging, and non-judgmental.
+- Ask a short follow-up question when useful.
+- Keep answers concise enough for a chat interface.
+- Use bullets when they make an explanation easier to understand.
+
+FINANCIAL SAFETY:
+
+This is an educational financial literacy tool and not a financial adviser.
+
+Do NOT:
+
+- Recommend specific stocks.
+- Recommend specific cryptocurrencies.
+- Recommend specific ETFs.
+- Recommend specific mutual funds.
+- Recommend specific brokers.
+- Tell users exactly what investments they should buy.
+- Tell users exactly what investments they should sell.
+- Make personalized investment decisions.
+- Promise financial returns.
+
+You MAY:
+
+- Explain general investment concepts.
+- Explain diversification.
+- Explain investment risk.
+- Explain compound interest.
+- Explain different types of investments at a general educational level.
+- Explain how financial products generally work.
+
+If someone asks for personalized financial advice, explain the general concept and encourage them to speak with a qualified financial professional.
+
+If the user asks something unrelated to financial education, politely explain that your main purpose is financial literacy and offer to help with a related financial topic.
+`,
+
+              temperature: 0.4,
+
+              // FIX: was 600, which was too low for this system prompt +
+              // "explain in small steps" teaching style. Gemini was hitting
+              // this ceiling mid-explanation and getting cut off (e.g.
+              // stopping right after "At its simplest, investing means...").
+              // Raised to 1200 to give full answers room to finish.
+              maxOutputTokens: 1200
+            }
+          });
+
+        console.log(
+          `✅ Gemini response generated using ${model}`
+        );
+
+        return response;
+
+      } catch (error) {
+        lastError = error;
+
+        const status =
+          error?.status ||
+          error?.code ||
+          error?.response?.status;
+
+        console.error(
+          `❌ Gemini ${model} attempt ${
+            attempt + 1
+          } failed:`,
+          error?.message || error
+        );
+
+        // Don't retry invalid API requests,
+        // authentication failures, etc.
+        const retryableStatuses = [
+          429,
+          500,
+          502,
+          503,
+          504
+        ];
+
+        if (!retryableStatuses.includes(status)) {
+          throw error;
+        }
+
+        // Exponential backoff:
+        // 1 sec -> 2 sec -> 4 sec
+        const delay =
+          1000 * Math.pow(2, attempt);
+
+        console.log(
+          `⏳ Retrying in ${delay / 1000}s...`
+        );
+
+        await sleep(delay);
+      }
+    }
+
+    console.log(
+      `⚠️ Model ${model} is unavailable.`
+    );
+console.log("CHECKPOINT 2000");
+  }
+
+  throw lastError;
+}
+
+
+// ======================= AI Tutor Route =======================
+//
+// FIX: The frontend (AiTutorModal.jsx -> api.js) was calling
+// POST /ai-tutor (hyphen), but this route was only registered
+// at POST /ai/tutor (slash). That mismatch is what produced the
+// "Cannot POST /ai-tutor" 404 you were seeing.
+//
+// The handler is now extracted into a named function and mounted
+// at BOTH paths, so it works regardless of which one the frontend
+// calls. Once you've confirmed everything works, feel free to pick
+// just one path and update your frontend `api.js` to match, then
+// remove the other `app.post(...)` line below.
+
+const aiTutorHandler = async (req, res) => {
+  try {
+    const { messages } = req.body;
+
+    // Validate request
+    if (
+      !Array.isArray(messages) ||
+      messages.length === 0
+    ) {
+      return res.status(400).json({
+        error: "Messages array is required."
+      });
+    }
+
+    // Check Gemini configuration
+    if (!gemini) {
+      console.error(
+        "❌ GEMINI_API_KEY is not configured."
+      );
+
+      return res.status(500).json({
+        error:
+          "AI tutor service is not configured."
+      });
+    }
+
+    // Keep only the latest 12 messages
+    const recentMessages =
+      messages.slice(-12);
+
+    // Convert frontend format to Gemini format
+    let geminiMessages =
+      recentMessages
+        .map((message) => {
+          const role =
+            message.role === "assistant"
+              ? "model"
+              : "user";
+
+          const text = String(
+            message.content || ""
+          )
+            .trim()
+            .slice(0, 2000);
+
+          return {
+            role,
+            parts: [
+              {
+                text
+              }
+            ]
+          };
+        })
+        .filter(
+          (message) =>
+            message.parts[0].text.length > 0
+        );
+
+    // Gemini conversations should begin
+    // with a user message.
+    while (
+      geminiMessages.length > 0 &&
+      geminiMessages[0].role !== "user"
+    ) {
+      geminiMessages.shift();
+    }
+
+    if (geminiMessages.length === 0) {
+      return res.status(400).json({
+        error: "A user message is required."
+      });
+    }
+
+    // Gemini expects alternating roles.
+    // Combine consecutive messages from the same role.
+    const normalizedMessages = [];
+
+    for (const message of geminiMessages) {
+      const lastMessage =
+        normalizedMessages[
+          normalizedMessages.length - 1
+        ];
+
+      if (
+        lastMessage &&
+        lastMessage.role === message.role
+      ) {
+        lastMessage.parts[0].text +=
+          "\n\n" +
+          message.parts[0].text;
+      } else {
+        normalizedMessages.push({
+          role: message.role,
+          parts: [
+            {
+              text: message.parts[0].text
+            }
+          ]
+        });
+      }
+    }
+
+    console.log(
+      `🤖 AI Tutor request from ${
+        req.user?.email ||
+        req.user?.uid ||
+        "unknown user"
+      }`
+    );
+
+    // Ask Gemini
+    const response =
+      await generateGeminiResponse(
+        normalizedMessages
+      );
+
+    let aiText =
+      response?.text ||
+      "I couldn't generate a response. Please try again.";
+
+    // FIX (safety net): if a reply still hits the token cap even after
+    // raising maxOutputTokens, let the user know it was cut off instead
+    // of silently ending mid-sentence, and invite them to continue.
+    const finishReason =
+      response?.candidates?.[0]?.finishReason;
+
+    if (finishReason === "MAX_TOKENS") {
+      console.warn(
+        "⚠️ Gemini response hit maxOutputTokens and was truncated."
+      );
+      aiText +=
+        "\n\n*(That answer got a bit long — ask me to continue if you'd like the rest!)*";
+    }
+
+    // Return response to frontend
+    return res.json({
+      reply: aiText,
+      response: aiText,
+      message: aiText
+    });
+
+  } catch (error) {
+    console.error(
+      "❌ Gemini AI Tutor Error:",
+      error
+    );
+
+    const status =
+      error?.status ||
+      error?.code;
+
+    // Gemini temporarily unavailable
+    if (
+      status === 503 ||
+      status === 429 ||
+      status === 500 ||
+      status === 502 ||
+      status === 504
+    ) {
+      return res.status(503).json({
+        error:
+          "The AI tutor is temporarily busy. Please try again in a few seconds."
+      });
+    }
+
+    return res.status(500).json({
+      error:
+        "Internal server error contacting AI tutor."
+    });
+  }
+};
+
+// Mounted at both paths — see FIX note above.
+app.post("/ai/tutor", requireAuth, tutorLimiter, aiTutorHandler);
+app.post("/ai-tutor", requireAuth, tutorLimiter, aiTutorHandler);
+
+
+
+// ----------------------- Cart & Checkout -----------------------
 
 app.get("/cart", requireAuth, async (req, res) => {
   try {
-    const items = await db.collection("Cart").find({ uid: req.user.uid }).toArray();
-    res.json(items);
+    const cartItems = await db.collection("Cart").find({ uid: req.user.uid }).toArray();
+    res.json(cartItems);
   } catch (err) {
-    console.error("Error fetching cart:", err);
-    res.status(500).json({ error: "Failed to get user cart items" });
+    console.error("Failed to fetch cart:", err);
+    res.status(500).json({ error: "Failed to fetch cart" });
   }
 });
 
-app.put("/cart/:id", requireAuth, async (req, res) => {
+app.post("/cart", requireAuth, async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid cart item ID format" });
-    
-    const { quantity, ...otherUpdates } = req.body;
-    const updates = {
-      ...otherUpdates,
-      quantity: parseInt(quantity) || 1,
-      updatedAt: new Date(),
+    const { itemId, itemType, title, price, image } = req.body;
+    const cartItem = {
+      uid: req.user.uid,
+      itemId,
+      itemType,
+      title,
+      price: Number(price),
+      image,
+      addedAt: new Date()
     };
-    
-    const result = await db.collection("Cart").findOneAndUpdate(
-      { _id: new ObjectId(id), uid: req.user.uid },
-      { $set: updates },
-      { returnDocument: "after" }
-    );
-    
-    if (!result.value) return res.status(404).json({ error: "Cart item not found" });
-    res.json(result.value);
+    const result = await db.collection("Cart").insertOne(cartItem);
+    res.status(201).json({ _id: result.insertedId, ...cartItem });
   } catch (err) {
-    console.error("Update cart error:", err);
-    res.status(500).json({ error: "Failed to update cart item" });
+    console.error("Failed to add to cart:", err);
+    res.status(500).json({ error: "Failed to add item to cart" });
   }
 });
 
 app.delete("/cart/:id", requireAuth, async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid cart item ID format" });
-    
-    const result = await db.collection("Cart").deleteOne({ _id: new ObjectId(id), uid: req.user.uid });
-    if (!result.deletedCount) return res.status(404).json({ message: "Cart item not found" });
-    res.json({ message: "Cart item deleted" });
+    const result = await db.collection("Cart").deleteOne({
+      _id: new ObjectId(req.params.id),
+      uid: req.user.uid
+    });
+    result.deletedCount ? res.json({ message: "Item removed" }) : res.status(404).json({ error: "Item not found" });
   } catch (err) {
-    console.error("Delete cart error:", err);
-    res.status(500).json({ error: "Failed to delete cart item" });
+    console.error("Failed to delete cart item:", err);
+    res.status(500).json({ error: "Failed to remove item from cart" });
   }
 });
 
-app.delete("/cart", requireAuth, async (req, res) => {
-  try {
-    const result = await db.collection("Cart").deleteMany({ uid: req.user.uid });
-    res.json({ message: `Deleted ${result.deletedCount} items` });
-  } catch (err) {
-    console.error("Clear cart error:", err);
-    res.status(500).json({ error: "Failed to clear cart" });
-  }
-});
+// ----------------------- Forum Write Operations -----------------------
 
-// ----------------------- Checkout & Orders -----------------------
-app.post("/checkout", requireAuth, async (req, res) => {
-  try {
-    const { paymentMethod, customer } = req.body;
-    const cartItems = await db.collection("Cart").find({ uid: req.user.uid }).toArray();
-    if (!cartItems.length) return res.status(400).json({ error: "Cart is empty" });
-
-    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-    const order = {
-      uid: req.user.uid,
-      userEmail: req.user.email,
-      items: cartItems.map(item => ({
-        productId: item.productId,
-        title: item.title,
-        quantity: item.quantity || 1,
-        price: item.price,
-      })),
-      totalAmount,
-      paymentMethod: paymentMethod || "unknown",
-      customer,
-      status: "Confirmed",
-      createdAt: new Date(),
-    };
-
-    const result = await db.collection("order-summary").insertOne(order);
-    await db.collection("Cart").deleteMany({ uid: req.user.uid });
-
-    res.status(201).json({ message: "Order placed successfully", orderId: result.insertedId, order });
-  } catch (err) {
-    console.error("Checkout error:", err);
-    res.status(500).json({ error: "Checkout failed" });
-  }
-});
-
-app.get("/orders", requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const orders = await db.collection("order-summary").find().toArray();
-    res.json(orders);
-  } catch (err) {
-    console.error("Failed to fetch all orders:", err);
-    res.status(500).json({ error: "Failed to fetch orders" });
-  }
-});
-
-app.get("/orders/user", requireAuth, async (req, res) => {
-  try {
-    const orders = await db.collection("order-summary").find({ uid: req.user.uid }).toArray();
-    res.json(orders);
-  } catch (err) {
-    console.error("User orders fetch failed:", err);
-    res.status(500).json({ error: "Failed to fetch user orders" });
-  }
-});
-
-app.put("/orders/:id", requireAuth, requireAdmin, async (req, res) => {
-  try {
-    if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: "Invalid order ID format" });
-    }
-    const updates = { ...req.body, updatedAt: new Date(), updatedBy: req.user.uid };
-    const result = await db.collection("order-summary").findOneAndUpdate(
-      { _id: new ObjectId(req.params.id) },
-      { $set: updates },
-      { returnDocument: "after" }
-    );
-    result.value ? res.json(result.value) : res.status(404).json({ message: "Order not found" });
-  } catch (err) {
-    console.error("Failed to update order:", err);
-    res.status(500).json({ error: "Failed to update order" });
-  }
-});
-
-app.delete("/orders/:id", requireAuth, requireAdmin, async (req, res) => {
-  try {
-    if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: "Invalid order ID format" });
-    }
-    const result = await db.collection("order-summary").deleteOne({ _id: new ObjectId(req.params.id) });
-    result.deletedCount ? res.json({ message: "Order deleted" }) : res.status(404).json({ message: "Order not found" });
-  } catch (err) {
-    console.error("Failed to delete order:", err);
-    res.status(500).json({ error: "Failed to delete order" });
-  }
-});
-
-// ----------------------- Forum Management -----------------------
 app.post("/forum-posts", requireAuth, async (req, res) => {
   try {
     const post = {
@@ -2906,6 +3374,7 @@ async function restoreScheduledReminders() {
 }
 
 module.exports = { restoreScheduledReminders };
+console.log("CHECKPOINT 2862");
 
 
 // ----------------------- Material Books Management -----------------------
@@ -3044,6 +3513,7 @@ app.post("/material-books/:id/image",
       const result = await db.collection("images").insertOne(imageDoc);
       
       // Update book with new image reference
+console.log("CHECKPOINT 3000");
       await db.collection("material-books").updateOne(
         {
           $or: [
@@ -3308,8 +3778,8 @@ app.get("/dashboard/user", requireAuth, async (req, res) => {
     });
 
   } catch (err) {
-    console.error("User dashboard error:", err);
-    res.status(500).json({ error: "Failed to fetch user dashboard" });
+    console.error("Failed to create forum post:", err);
+    res.status(500).json({ error: "Failed to create forum post" });
   }
 });
 
@@ -3920,9 +4390,26 @@ app.get("/api/verify-payment/:reference", requireAuth, async (req, res) => {
     } else {
       res.json({ status: "failed", message: "Payment verification failed" });
     }
+
+    const reply = {
+      postId,
+      uid: req.user.uid,
+      authorName: req.user.name || "Anonymous",
+      content: sanitizeInput(content),
+      createdAt: new Date()
+    };
+
+    const result = await db.collection("forum-replies").insertOne(reply);
+
+    await db.collection("forum-posts").updateOne(
+      { _id: ObjectId.isValid(postId) ? new ObjectId(postId) : postId },
+      { $inc: { repliesCount: 1 } }
+    );
+
+    res.status(201).json({ _id: result.insertedId, ...reply });
   } catch (err) {
-    console.error("Payment verification error:", err);
-    res.status(400).json({ error: err.message });
+    console.error("Failed to submit reply:", err);
+    res.status(500).json({ error: "Failed to submit reply" });
   }
 });
 
@@ -3930,10 +4417,13 @@ app.get("/api/verify-payment/:reference", requireAuth, async (req, res) => {
 app.post("/api/paystack/callback", async (req, res) => {
   try {
     const event = req.body;
+
     if (event.event === "charge.success") {
       const reference = event.data.reference;
+
       if (paystack) {
         const response = await paystack.transaction.verify(reference);
+
         if (response.data && response.data.status === "success") {
           const transaction = {
             payment_id: response.data.reference,
@@ -3943,10 +4433,12 @@ app.post("/api/paystack/callback", async (req, res) => {
             created_at: new Date(),
             gateway_response: response.data.gateway_response,
           };
+
           await db.collection("transactions").insertOne(transaction);
         }
       }
     }
+
     res.sendStatus(200);
   } catch (err) {
     console.error("Callback error:", err);
@@ -3956,45 +4448,66 @@ app.post("/api/paystack/callback", async (req, res) => {
 
 // ----------------------- Error Handling -----------------------
 app.use((req, res) => {
-  res.status(404).json({ 
-    error: "Not found", 
-    path: req.path 
+  res.status(404).json({
+    error: "Not found",
+    path: req.path,
   });
 });
 
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
-  res.status(err.status || 500).json({ 
+  res.status(err.status || 500).json({
     error: err.message || "Internal server error",
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 });
 
 // ----------------------- Server Start -----------------------
-// Replace unconditional listen with conditional start and export app
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running at http://${Base_API}:${PORT}`);
-  });
-}
+console.log("REACHED SERVER START");
+// Only start the server when this file is executed directly.
+console.log("START CHECK:", require.main === module, "NODE_ENV:", process.env.NODE_ENV);
+if (require.main === module && process.env.NODE_ENV !== "test") {
+  connectToMongo()
+    .then(async () => {
+      console.log("MongoDB connection ready");
 
-/*
-  -----------------------
-  Testing notes (for contributors)
-  -----------------------
-  - Tests use NODE_ENV=test and SKIP_AUTH=true to:
-    * Prevent automatic process.exit on DB connect failure.
-    * Bypass Firebase remote calls in middleware.
-  - Tests should call server.connectToMongo() then server.getDb() to share the same DB instance with the app.
-  - Always clean up test collections between tests to avoid cross-test interference.
-*/
+      try {
+        await ensureCollections();
+        console.log("Database collections verified");
+      } catch (err) {
+        console.error("Failed to ensure collections:", err);
+      }
+
+      try {
+        restoreScheduledReminders();
+      } catch (err) {
+        console.error("Failed to restore scheduled reminders:", err);
+      }
+
+      app.listen(PORT, () => {
+        console.log(`Server running at http://${Base_API}:${PORT}`);
+        console.log(
+          `Gemini AI: ${
+            process.env.GEMINI_API_KEY ? "configured" : "NOT CONFIGURED"
+          }`
+        );
+      });
+    })
+    .catch((err) => {
+      console.error("Failed to start server:", err);
+
+      if (process.env.NODE_ENV !== "test") {
+        process.exit(1);
+      }
+    });
+}
 
 /*
   -----------------------
   Server start & exports
   -----------------------
-  - Only call app.listen() when module is executed directly (require.main === module).
-  - Export app + helpers (connectToMongo, getDb) via CommonJS so Mocha can require them.
+  - Only call app.listen() when module is executed directly.
+  - Export app + helpers for testing.
 */
 module.exports = app;
 module.exports.connectToMongo = connectToMongo;
@@ -4008,20 +4521,28 @@ module.exports.getDb = () => db;
   - Accepts route param strings and attempts to return a MongoDB ObjectId when possible.
   - Supports:
     - plain hex string (ObjectId.isValid)
-    - JSON-encoded forms like {"_id":"..."} or {"$oid":"..."} (defensive)
+    - JSON-encoded forms like {"_id":"..."} or {"$oid":"..."}
   - Returns: new ObjectId(...) or null if unable to resolve.
-  - Used by update handlers (PUT /courses/:id, PUT /forum-posts/:id) to robustly match document identifiers.
 */
 function resolveIdParam(param) {
-  // ...existing code...
   try {
     const parsed = JSON.parse(param);
+
     if (!parsed) return null;
-    if (parsed._id && ObjectId.isValid(parsed._id)) return new ObjectId(parsed._id);
-    if (parsed.$oid && ObjectId.isValid(parsed.$oid)) return new ObjectId(parsed.$oid);
-    if (parsed.id && ObjectId.isValid(parsed.id)) return new ObjectId(parsed.id);
+
+    if (parsed._id && ObjectId.isValid(parsed._id)) {
+      return new ObjectId(parsed._id);
+    }
+
+    if (parsed.$oid && ObjectId.isValid(parsed.$oid)) {
+      return new ObjectId(parsed.$oid);
+    }
+
+    if (parsed.id && ObjectId.isValid(parsed.id)) {
+      return new ObjectId(parsed.id);
+    }
   } catch (e) {
-    // not JSON — ignore and fall through
+    // Not JSON — ignore and fall through.
   }
 
   return null;

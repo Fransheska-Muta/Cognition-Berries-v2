@@ -718,14 +718,13 @@ const handleContinueCourse = async (course) => {
                     <div
                         className="personalized-learning-card"
                         style={{
-                            border:
-                                "1px solid #e3e0e8",
+                            // border:"1px solid #2d0770",
                             borderRadius: "10px",
                             padding: "20px",
                             marginBottom: "18px",
                             background: "white",
                             boxShadow:
-                                "0 2px 8px rgba(40, 30, 60, 0.03)"
+                                "0 2px 8px rgba(40, 30, 60, 0.7)"
                         }}
                     >
 
@@ -937,7 +936,9 @@ const handleContinueCourse = async (course) => {
                             borderRadius: "10px",
                             padding: "18px",
                             marginBottom: "18px",
-                            background: "#faf9fd"
+                            background: "#faf9fd",
+                            boxShadow:
+                                "0 2px 8px rgba(40, 30, 60, 0.7)"
                         }}
                     >
 
@@ -1066,7 +1067,7 @@ const handleContinueCourse = async (course) => {
 
           <div className="recommended-card">
   <div className="recommended-header">
-    <h3>Recommended Next Course</h3>
+    <h3>Recommended Courses</h3>
   </div>
 
   <div className="recommended-content">
@@ -1089,31 +1090,24 @@ const handleContinueCourse = async (course) => {
 
         return (
           <div className="recommended-course" key={courseId || courseTitle}>
+            <div className="separation">
             <div className="course-info">
               <h4>{courseTitle}</h4>
 
-              {course.description && (
-                <p>{course.description}</p>
-              )}
-
+              {course.description && (<p>{course.description}</p>)}
               <div className="course-progress">
                 <div className="progress-bar">
-                  <div
-                    className="progress"
-                    style={{ width: `${progress}%` }}
-                  ></div>
+                  <div className="progress" style={{ width: `${progress}%` }}></div>
                 </div>
 
                 <span>{progress}% complete</span>
               </div>
             </div>
 
-            <button
-              className="course-button"
-              onClick={() => handleContinueCourse(course)}
-            >
+            <button className="course-button" onClick={() => handleContinueCourse(course)}>
               {progress > 0 ? "Continue" : "Start"}
             </button>
+          </div>
           </div>
         );
       })
