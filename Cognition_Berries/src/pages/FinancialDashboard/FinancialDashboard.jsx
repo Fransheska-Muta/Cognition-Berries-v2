@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../config/api";
 import "./FinancialDashboard.css";
 import Navbar from "../../components/Navbar/Navbar";
+import { useAuth } from "../../Context/AuthContext";
 
 function FinancialDashboard() {
     const navigate = useNavigate();
+
     const [showGoals, setShowGoals] = useState(false);
     const [showActivity, setShowActivity] = useState(false);
     // Personalised learning from onboarding quiz
@@ -24,6 +26,32 @@ function FinancialDashboard() {
         totalStudyTime: 0,
         averageScore: 0
     });
+
+const { currentUser } = useAuth();
+
+const [user, setUser] = useState(null);
+
+useEffect(() => {
+  try {
+    const savedUser = localStorage.getItem("user");
+
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  } catch (error) {
+    console.error("Could not load user:", error);
+  }
+}, []);
+
+const userName =
+  currentUser?.displayName ||
+  user?.name ||
+  currentUser?.email?.split("@")[0] ||
+  user?.email?.split("@")[0] ||
+  "Student";
+
+  
+  
     const [studyStreak, setStudyStreak] = useState(0);
     useEffect(() => {
         // Get the answers saved after the onboarding quiz
@@ -130,9 +158,33 @@ function FinancialDashboard() {
     }
     const activeKnowledgeBars = getKnowledgeBars(knowledgeLevel);
     const getCourseId = (course) => {
-        return ( course?.courseId || course?.course_id || course?._id || course?.id
-        )
+    const rawId =
+        course?.courseId ??
+        course?.course_id ??
+        course?._id ??
+        course?.id;
+
+    if (rawId === undefined || rawId === null) {
+        return null;
     }
+
+    // MongoDB ObjectId returned as { $oid: "..." }
+    if (typeof rawId === "object") {
+        if (rawId.$oid) {
+            return String(rawId.$oid);
+        }
+
+        // Some MongoDB responses can contain an object with an id field
+        if (rawId.id) {
+            return String(rawId.id);
+        }
+
+        console.error("❌ Course ID is an unexpected object:", rawId);
+        return null;
+    }
+
+    return String(rawId);
+};
 
     const getCourseTitle = (course) => {
         return ( course?.courseName || course?.title || course?.name ||"Untitled Course"
@@ -181,28 +233,58 @@ function FinancialDashboard() {
         return progress?.percentComplete || 0;
     };
 
-    const handleContinueCourse = (course) => {
+const handleContinueCourse = async (course) => {
+    try {
         const courseId = getCourseId(course);
 
-        if (courseId) {
-            console.log(
-                "Opening course:",
-                getCourseTitle(course),
-                courseId
-            );
+        console.log("📚 Course:", course);
+        console.log("🆔 Normalized Course ID:", courseId);
 
-            navigate(`/learn/${courseId}`);
-        } else {
-            console.error(
-                "No valid course ID found:",
-                course
-            );
-
-            alert(
-                "Unable to open course. Please try again."
-            );
+        if (!courseId) {
+            console.error("❌ Could not find a valid course ID");
+            return;
         }
-    };
+
+        const enrollmentResponse = await apiRequest(
+            `/enroll/${courseId}`,
+            {
+                method: "GET"
+            }
+        );
+
+        const enrollmentData = await enrollmentResponse.json();
+
+        if (!enrollmentData.isEnrolled) {
+            const enrollResponse = await apiRequest(
+                `/enroll/${courseId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            const enrollData = await enrollResponse.json();
+
+            if (!enrollResponse.ok) {
+                throw new Error(
+                    enrollData?.error ||
+                    "Could not enroll in course"
+                );
+            }
+
+            console.log("✅ Enrolled:", enrollData);
+        }
+
+        console.log("🚀 Opening course:", courseId);
+
+        navigate(`/course/${encodeURIComponent(courseId)}/learn`);
+
+    } catch (error) {
+        console.error("❌ Failed to start course:", error);
+    }
+};
 
     const getPersonalizedCourses = () => {
         if (
@@ -309,13 +391,7 @@ function FinancialDashboard() {
 
                     <div>
 
-                        <h1>
-                            Welcome back,{" "}
-                            {onboardingData?.name ||
-                                onboardingData?.firstName ||
-                                "Thabo"}
-                            !
-                        </h1>
+                        <h1> Welcome back,{" "} {userName}! </h1>
 
                         <p>
                             Keep up the great work!
@@ -1002,19 +1078,15 @@ function FinancialDashboard() {
     ) : recommendedCourses.length === 0 ? (
       <p>No recommended courses available yet.</p>
     ) : (
-      recommendedCourses.map((course) => {
-        const courseId =
-          course.courseId ||
-          course.course_id ||
-          course._id ||
-          course.id;
+     recommendedCourses.map((course) => {
+    const courseId = getCourseId(course);
 
-        const courseTitle =
-          course.title ||
-          course.name ||
-          "Untitled Course";
+    const courseTitle =
+        course.title ||
+        course.name ||
+        "Untitled Course";
 
-        const progress = getCourseProgress(courseId);
+    const progress = getCourseProgress(courseId);
 
         return (
           <div className="recommended-course" key={courseId || courseTitle}>
