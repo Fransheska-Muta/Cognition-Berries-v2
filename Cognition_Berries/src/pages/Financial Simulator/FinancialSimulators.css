@@ -22,13 +22,14 @@
 }
 
 .chart-axis-title {
+  /* border: 2px solid red; */
   fill: #334155;
-  font-size: 12px;
+  font-size: 20px; 
   font-weight: 600;
 }
 
 .chart-grid-line {
-  stroke: #e2e8f0;
+  stroke: #b314e4;
   stroke-width: 1;
   stroke-dasharray: 4 4;
 }
