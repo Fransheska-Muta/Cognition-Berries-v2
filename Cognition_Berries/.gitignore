@@ -1,3 +1,4 @@
+
 # Logs
 logs
 *.log
@@ -15,10 +16,11 @@ dist
 dist-ssr
 
 # Environment variables
-.envgit rm --cached .env
 .env
+.env.*
 *.env
 *.local
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -35,6 +37,7 @@ dist-ssr
 *cypress
 
 # Sensitive files
+*.pem
 Sanje-key.pem
-gnition-berries-firebase-adminsdk-fbsvc-74466cd3b4.json
 firebase-service-account.json
+*firebase-adminsdk*.json
