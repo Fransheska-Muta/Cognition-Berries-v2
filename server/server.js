@@ -66,6 +66,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 const defaultAllowedOrigins = [
   "http://52.44.223.219:3000",
   "http://localhost:5173",
+  "http://localhost:5174",
   "http://cognition-berries.s3-website-us-east-1.amazonaws.com",
 ];
 const envOrigins = process.env.ALLOWED_ORIGINS
