@@ -136,57 +136,187 @@ function GrowthChart({ data, type = "balance" }) {
     );
   }
 
-  const values = data.map((item) => type === "debt"? item.balance: item.balance)
-  const contributions = data.map((item) =>item.contributions || 0)
+  const values = data.map((item) => item.balance || 0);
+  const contributions = data.map((item) => item.contributions || 0);
+
   const maxValue = Math.max(...values, ...contributions, 1);
+
   const width = 700;
-  const height = 280;
-  const padding = 35;
+  const height = 320;
+
+  // More space on the left and bottom for axis labels
+  const paddingLeft = 70;
+  const paddingRight = 25;
+  const paddingTop = 25;
+  const paddingBottom = 55;
+
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
+
   const createPoints = (items, valueKey) => {
     return items
       .map((item, index) => {
         const value = item[valueKey] || 0;
 
-        const x = padding + (index / Math.max(items.length - 1, 1)) *(width - padding * 2);
-        const y = height - padding - (value / maxValue) *(height - padding * 2);
+        const x =
+          paddingLeft +
+          (index / Math.max(items.length - 1, 1)) * chartWidth;
+
+        const y =
+          height -
+          paddingBottom -
+          (value / maxValue) * chartHeight;
+
         return `${x},${y}`;
       })
-      .join(" ")
-  }
+      .join(" ");
+  };
+
   const balancePoints = createPoints(data, "balance");
+
+  // Y-axis labels
+  const yLabels = [0, 0.25, 0.5, 0.75, 1].map((percentage) => ({
+    value: maxValue * percentage,
+    y: height - paddingBottom - percentage * chartHeight,
+  }));
+
+  // X-axis labels
+  const xLabels = data.filter((_, index) => {
+    if (data.length <= 6) return true;
+
+    const step = Math.ceil(data.length / 6);
+    return index % step === 0 || index === data.length - 1;
+  });
+
   return (
     <div className="sim-chart-wrapper">
-      <svg viewBox={`0 0 ${width} ${height}`} className="sim-chart" role="img" aria-label="Financial growth chart">
-        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="chart-axis"/>
-        <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="chart-axis" />
-        <polyline points={balancePoints} className="chart-line" fill="none"/>
-        {/* {type !== "debt" && (
-          <polyline points={createPoints(data, "contributions")} className="chart-line-secondary" fill="none"/>
-        )} */}
-        {data.map((item, index) => {
-          const value = item.balance || 0;
-          const x =padding +(index / Math.max(data.length - 1, 1)) *(width - padding * 2);
-          const y = height - padding - (value / maxValue) *(height - padding * 2);
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="sim-chart"
+        role="img"
+        aria-label="Financial growth chart"
+      >
+        {/* Horizontal grid lines and Y-axis labels */}
+        {yLabels.map((label, index) => (
+          <g key={index}>
+            <line
+              x1={paddingLeft}
+              y1={label.y}
+              x2={width - paddingRight}
+              y2={label.y}
+              className="chart-grid-line"
+            />
+
+            <text
+              x={paddingLeft - 10}
+              y={label.y + 4}
+              textAnchor="end"
+              className="chart-axis-label"
+            >
+              {formatCurrency(label.value)}
+            </text>
+          </g>
+        ))}
+
+        {/* X and Y axis */}
+        <line
+          x1={paddingLeft}
+          y1={paddingTop}
+          x2={paddingLeft}
+          y2={height - paddingBottom}
+          className="chart-axis"
+        />
+
+        <line
+          x1={paddingLeft}
+          y1={height - paddingBottom}
+          x2={width - paddingRight}
+          y2={height - paddingBottom}
+          className="chart-axis"
+        />
+
+        {/* X-axis tick labels */}
+        {xLabels.map((item, index) => {
+          const originalIndex = data.indexOf(item);
+
+          const x =
+            paddingLeft +
+            (originalIndex / Math.max(data.length - 1, 1)) *
+              chartWidth;
+
+          const label =
+            type === "debt"
+              ? `Month ${item.month}`
+              : `Year ${item.year}`;
 
           return (
-            <circle key={`${item.year || item.month}-${index}`} cx={x} cy={y} r="4" className="chart-point"/>
-          )
+            <text
+              key={index}
+              x={x}
+              y={height - paddingBottom + 22}
+              textAnchor="middle"
+              className="chart-axis-label"
+            >
+              {label}
+            </text>
+          );
+        })}
+
+        {/* Y-axis title */}
+        <text
+          x="20"
+          y={height / 2}
+          textAnchor="middle"
+          transform={`rotate(-90 18 ${height / 2})`}
+          className="chart-axis-title"
+        >
+          Money (ZAR)
+        </text>
+
+        {/* X-axis title */}
+        <text
+          x={width / 2}
+          y={height - 8}
+          textAnchor="middle"
+          className="chart-axis-title"
+        >
+          {type === "debt" ? "Time (Months)" : "Time (Years)"}
+        </text>
+
+        {/* Main graph line */}
+        <polyline
+          points={balancePoints}
+          className="chart-line"
+          fill="none"
+        />
+
+        {/* Data points */}
+        {data.map((item, index) => {
+          const value = item.balance || 0;
+
+          const x =
+            paddingLeft +
+            (index / Math.max(data.length - 1, 1)) * chartWidth;
+
+          const y =
+            height -
+            paddingBottom -
+            (value / maxValue) * chartHeight;
+
+          return (
+            <circle
+              key={`${item.year || item.month}-${index}`}
+              cx={x}
+              cy={y}
+              r="4"
+              className="chart-point"
+            />
+          );
         })}
       </svg>
-
-      <div className="chart-labels">
-        <span>
-          {type === "debt" ? "Starting debt" : "Starting"}
-        </span>
-
-        <span>
-          {type === "debt" ? "Debt repayment" : "Future value"}
-        </span>
-      </div>
     </div>
   );
 }
-
 // the calculatiosn
 function FinancialSimulators() {
   // const navigate = useNavigate();

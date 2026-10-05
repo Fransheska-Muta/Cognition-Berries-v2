@@ -15,6 +15,7 @@ dist
 dist-ssr
 
 # Environment variables
+.envgit rm --cached .env
 .env
 *.env
 *.local
