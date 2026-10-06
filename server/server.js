@@ -336,6 +336,8 @@ function getPersonalFinanceModules() {
 // }
 
 function getCourseModules(course) {
+  // 1. If the course already has its own modules,
+  // always use those first.
   if (
     course?.modules &&
     Array.isArray(course.modules) &&
@@ -344,15 +346,25 @@ function getCourseModules(course) {
     return course.modules;
   }
 
-  const title =
-    String(course?.title || "").toLowerCase();
+  const title = String(course?.title || "").toLowerCase();
+  const category = String(course?.category || "").toLowerCase();
 
-  const category =
-    String(course?.category || "").toLowerCase();
-
+  // 2. Personal finance courses
   if (
     title.includes("personal finance") ||
-    category.includes("personal finance")
+    category.includes("personal finance") ||
+    title.includes("finance manager") ||
+    title.includes("financial manager")
+  ) {
+    return getPersonalFinanceModules();
+  }
+
+  // 3. Other finance-related courses
+  if (
+    title.includes("finance") ||
+    title.includes("financial") ||
+    category.includes("finance") ||
+    category.includes("financial")
   ) {
     return getPersonalFinanceModules();
   }
@@ -895,7 +907,19 @@ app.get("/courses/:id", async (req, res) => {
       });
     }
 
-    res.json(course[0]);
+    const courseData = course[0];
+
+// Add learning modules when the course does not already
+// contain its own curriculum.
+if (
+  !courseData.modules ||
+  !Array.isArray(courseData.modules) ||
+  courseData.modules.length === 0
+) {
+  courseData.modules = getCourseModules(courseData);
+}
+
+res.json(courseData);
   } catch (err) {
     console.error("Failed to fetch course:", err);
 
