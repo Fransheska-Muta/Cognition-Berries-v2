@@ -55,18 +55,18 @@
 
   .tutor-header {
     background: #16302B;
-    color: #F4F2EC;
+    /* color: #F4F2EC; */
     padding: 18px 20px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     flex-shrink: 0;
   }
-  .tutor-header h3 { margin: 0; font-size: 1.05rem; }
-  .tutor-header span { font-size: 0.75rem; color: #C9BFA5; }
+  .tutor-header h3 { margin: 0; font-size: 1.05rem; color: #F4F2EC;}
+  .tutor-header span { font-size: 0.75rem; color: #b8b18e; }
   .tutor-close {
     background: none; border: none; color: #F4F2EC;
-    font-size: 1.4rem; cursor: pointer; line-height: 1;
+    font-size: 1.7rem; cursor: pointer; line-height: 1.5;
   }
 
   .tutor-disclaimer {
