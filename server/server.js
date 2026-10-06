@@ -471,7 +471,7 @@ async function connectToMongo() {  /*
   if (db) return db;
 
   try {
-    console.log("MONGO_URI =", process.env.MONGO_URI);
+    // console.log("MONGO_URI =", process.env.MONGO_URI);
     await client.connect();
     db = client.db(process.env.MONGO_DB_NAME || "cognition-berries");
     console.log("✅ Connected to MongoDB");
